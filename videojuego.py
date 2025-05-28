@@ -63,11 +63,11 @@ except pygame.error as e:
 
 # --- Constantes de Juego ---
 PLAYER_INITIAL_HEALTH = 100
-ENEMY_ATTACK_DAMAGE = 15
-DEADLY_OBSTACLE_DAMAGE = 25
-PLAYER_ATTACK_COOLDOWN = 5000 # milisegundos
+ENEMY_ATTACK_DAMAGE = 10
+DEADLY_OBSTACLE_DAMAGE = 10
+PLAYER_ATTACK_COOLDOWN = 500 # milisegundos
 PLAYER_ATTACK_DAMAGE = 20 # Daño que hace el jugador al enemigo
-PLAYER_ATTACK_ANIM_DURATION = 100 # Duración de la animación de ataque del jugador
+PLAYER_ATTACK_ANIM_DURATION = 10 # Duración de la animación de ataque del jugador
 ENEMY_ATTACK_ANIM_DURATION = 100 # Duración de la animación de ataque del enemigo
 UI_BAR_HEIGHT = int(SCREEN_HEIGHT * 0.1) # Altura de la barra de UI superior
 
@@ -191,7 +191,7 @@ class Enemy(pygame.sprite.Sprite):
         self.rect = self.image.get_rect(center=(x, y))
         self.speed = 4 
         self.health = 100
-        self.attack_cooldown = 4000 # Cooldown para atacar al jugador (milisegundos)
+        self.attack_cooldown = 500 # Cooldown para atacar al jugador (milisegundos)
         self.last_attack_time = 0
         self.damage_taken_this_attack = False # Nuevo: Para evitar daño múltiple por un solo ataque de jugador
         self.is_aggressive = False # Nuevo: el enemigo es pasivo al inicio
@@ -858,14 +858,15 @@ while running:
 
 
     elif game_state == "playing" or game_state == "feedback" or game_state == "level_complete":
+        
         # Dibujar área de UI superior
         pygame.draw.rect(screen, WHITE, (0, 0, SCREEN_WIDTH, UI_BAR_HEIGHT))
         
         # Mostrar la operación actual - Centrado
         draw_text(screen, current_operation, font_operation, BLACK, SCREEN_WIDTH // 2, UI_BAR_HEIGHT // 2)
-        
+
         # Mostrar contador de objetos (derecha)
-        draw_text(screen, f"Objetos: {player.collected_objects}", font_counter, BLACK, SCREEN_WIDTH - int(SCREEN_WIDTH * 0.1), UI_BAR_HEIGHT // 2)
+        draw_text(screen, f"Objetos: {player.collected_objects}", font_counter, BLACK, SCREEN_WIDTH - int(SCREEN_WIDTH * 0.1), SCREEN_HEIGHT - int(SCREEN_HEIGHT * 0.05))
         
         # Mostrar vidas de checkpoint (izquierda)
         draw_text(screen, f"Vidas: {player_checkpoint_lives}", font_lives, BLACK, int(SCREEN_WIDTH * 0.1), UI_BAR_HEIGHT // 2) 
