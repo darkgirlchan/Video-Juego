@@ -50,15 +50,15 @@ font_popup_text = pygame.font.Font(None, int(SCREEN_HEIGHT * 0.04)) # Para texto
 
 # --- Sonidos (Asegúrate de que los archivos .wav existan en la misma carpeta) ---
 try:
-    sound_collect = pygame.mixer.Sound("collect.wav")
-    sound_correct = pygame.mixer.Sound("correct.wav")
-    sound_incorrect = pygame.mixer.Sound("incorrect.wav")
-    sound_hit_deadly = pygame.mixer.Sound("hit_deadly.wav")
-    sound_enemy_hit = pygame.mixer.Sound("enemy_hit.wav")
-    sound_player_hit = pygame.mixer.Sound("player_hit.wav")
-    sound_enemy_death = pygame.mixer.Sound("enemy_death.wav")
-    sound_win = pygame.mixer.Sound("win.wav") # Nuevo sonido de victoria
-    sound_game_over = pygame.mixer.Sound("game_over.wav") # Nuevo sonido de game over
+    sound_collect = pygame.mixer.Sound("assets/audios/collect.wav")
+    sound_correct = pygame.mixer.Sound("assets/audios/correct.wav")
+    sound_incorrect = pygame.mixer.Sound("assets/audios/incorrect.wav")
+    sound_hit_deadly = pygame.mixer.Sound("assets/audios/hit_deadly.wav")
+    sound_enemy_hit = pygame.mixer.Sound("assets/audios/enemy_hit.wav")
+    sound_player_hit = pygame.mixer.Sound("assets/audios/player_hit.wav")
+    sound_enemy_death = pygame.mixer.Sound("assets/audios/enemy_death.wav")
+    sound_win = pygame.mixer.Sound("assets/audios/win.wav") # Nuevo sonido de victoria
+    sound_game_over = pygame.mixer.Sound("assets/audios/game_over.wav") # Nuevo sonido de game over
 except pygame.error as e:
     print(f"Advertencia: No se pudieron cargar los sonidos: {e}. Asegúrate de que existan los archivos 'collect.wav', 'correct.wav', 'incorrect.wav', 'hit_deadly.wav', 'enemy_hit.wav', 'player_hit.wav', 'enemy_death.wav', 'win.wav', 'game_over.wav' en la misma carpeta.")
     sound_collect = None
@@ -90,9 +90,8 @@ class Player(pygame.sprite.Sprite):
     def __init__(self, x, y):
         super().__init__()
         # Cargar imagen del jugador
-        self.image = pygame.image.load("player.png").convert_alpha()
+        self.image = pygame.image.load("assets/imagenes/player.png").convert_alpha()
         self.image = pygame.transform.scale(self.image, (int(SCREEN_WIDTH * 0.07), int(SCREEN_HEIGHT * 0.1))) # Tamaño ajustado
-        
         self.rect = self.image.get_rect(center=(x, y))
         self.speed = 5
         self.collected_objects = 0
@@ -102,14 +101,11 @@ class Player(pygame.sprite.Sprite):
         self.last_attack_time = 0
         self.attack_anim_start_time = 0 # Nuevo para la animación
         self.last_hit_time = 0 # Nuevo: para la invulnerabilidad
-
     def update(self, keys):
         self.prev_rect = self.rect.copy() # Guarda la posición anterior
-        
         # Resetear estado de ataque de la animación
         if pygame.time.get_ticks() - self.attack_anim_start_time > PLAYER_ATTACK_ANIM_DURATION:
             self.is_attacking = False
-        
         if keys[pygame.K_LEFT] or keys[pygame.K_a]:
             self.rect.x -= self.speed
         if keys[pygame.K_RIGHT] or keys[pygame.K_d]:
@@ -118,37 +114,30 @@ class Player(pygame.sprite.Sprite):
             self.rect.y -= self.speed
         if keys[pygame.K_DOWN] or keys[pygame.K_s]:
             self.rect.y += self.speed
-        
         # Ataque con la tecla ESPACIO
         current_time = pygame.time.get_ticks()
         if keys[pygame.K_SPACE] and current_time - self.last_attack_time > PLAYER_ATTACK_COOLDOWN:
             self.is_attacking = True
             self.last_attack_time = current_time
             self.attack_anim_start_time = current_time # Iniciar el temporizador de animación
-
         # Mantener al jugador dentro de los límites de la pantalla (excluyendo el área de la UI superior)
         self.rect.left = max(0, self.rect.left)
         self.rect.right = min(SCREEN_WIDTH, self.rect.right)
         self.rect.top = max(UI_BAR_HEIGHT, self.rect.top) # Evitar que suba a la zona de la operación
         self.rect.bottom = min(SCREEN_HEIGHT, self.rect.bottom)
-
     def revert_position(self):
         self.rect = self.prev_rect.copy() # Vuelve a la posición guardada
-
     def add_object(self):
         self.collected_objects += 1
         if sound_collect:
             sound_collect.play()
-
     def drop_object(self):
         if self.collected_objects > 0:
             self.collected_objects -= 1
             if sound_collect: # Podrías usar otro sonido, o el mismo
                 sound_collect.play()
-
     def reset_objects(self):
         self.collected_objects = 0
-
     def take_damage(self, amount):
         current_time = pygame.time.get_ticks()
         if current_time - self.last_hit_time > INVULNERABILITY_DURATION: #
@@ -158,34 +147,28 @@ class Player(pygame.sprite.Sprite):
             if sound_player_hit:
                 sound_player_hit.play()
             self.last_hit_time = current_time # Reiniciar el temporizador de invulnerabilidad
-
     def reset_health(self):
         self.health = PLAYER_INITIAL_HEALTH
-
 class CollectibleObject(pygame.sprite.Sprite):
     def __init__(self, x, y):
         super().__init__()
         # Cargar imagen del objeto
-        self.image = pygame.image.load("star.png").convert_alpha()
+        self.image = pygame.image.load("assets/imagenes/star.png").convert_alpha()
         self.image = pygame.transform.scale(self.image, (int(SCREEN_WIDTH * 0.03), int(SCREEN_HEIGHT * 0.04))) # Tamaño ajustado
         self.rect = self.image.get_rect(center=(x, y))
         self.collected = False
-
 class Goal(pygame.sprite.Sprite):
     def __init__(self, x, y, value):
         super().__init__()
         self.value = value
         # Cargar imagen de la meta
-        self.image = pygame.image.load("goal.png").convert_alpha()
+        self.image = pygame.image.load("assets/imagenes/goal.png").convert_alpha()
         # Reducir el tamaño de la imagen de la meta
         self.image = pygame.transform.scale(self.image, (int(SCREEN_WIDTH * 0.07), int(SCREEN_HEIGHT * 0.09))) # ¡Tamaño más pequeño!
-        
         self.rect = self.image.get_rect(center=(x, y))
-        
         # Crear un rect de colisión más pequeño que la imagen
         self.collision_rect = pygame.Rect(0, 0, self.image.get_width() * 0.7, self.image.get_height() * 0.7)
         self.collision_rect.center = self.rect.center # Centrar el rect de colisión
-
         # Renderizar el número de la meta en la imagen
         text_surface = font_goal.render(str(self.value), True, BLACK)
         text_rect = text_surface.get_rect(center=(self.image.get_width() // 2, self.image.get_height() // 2))
@@ -199,27 +182,26 @@ class Obstacle(pygame.sprite.Sprite):
         self.image = pygame.Surface((width, height))
         if self.type == "solid":
             self.image.fill(SOLID_OBSTACLE_COLOR) # Color marrón para un obstáculo sólido
-            self.image = pygame.image.load("rock.png").convert_alpha(); self.image = pygame.transform.scale(self.image, (width, height))
+            self.image = pygame.image.load("assets/imagenes/rock.png").convert_alpha(); self.image = pygame.transform.scale(self.image, (width, height))
             try: # Cargar imagen de roca
-                self.image = pygame.image.load("rock.png").convert_alpha()
+                self.image = pygame.image.load("assets/imagenes/rock.png").convert_alpha()
                 self.image = pygame.transform.scale(self.image, (width, height))
             except pygame.error:
                 self.image.fill(SOLID_OBSTACLE_COLOR) # Si la imagen no se carga, usa el color
         elif self.type == "deadly":
             self.image.fill(DEADLY_OBSTACLE_COLOR) # Color rojo para un obstáculo mortal
-            self.image = pygame.image.load("lava.png").convert_alpha(); self.image = pygame.transform.scale(self.image, (width, height))
+            self.image = pygame.image.load("assets/imagenes/lava.png").convert_alpha(); self.image = pygame.transform.scale(self.image, (width, height))
             try: # Cargar imagen de lava
-                self.image = pygame.image.load("lava.png").convert_alpha()
+                self.image = pygame.image.load("assets/imagenes/lava.png").convert_alpha()
                 self.image = pygame.transform.scale(self.image, (width, height))
             except pygame.error:
                 self.image.fill(DEADLY_OBSTACLE_COLOR) # Si la imagen no se carga, usa el color
-        
         self.rect = self.image.get_rect(center=(x, y))
 
 class Enemy(pygame.sprite.Sprite):
     def __init__(self, x, y):
         super().__init__()
-        self.image = pygame.image.load("enemy.png").convert_alpha() # Cargar imagen del enemigo
+        self.image = pygame.image.load("assets/imagenes/enemy.png").convert_alpha() # Cargar imagen del enemigo
         self.image = pygame.transform.scale(self.image, (int(SCREEN_WIDTH * 0.07), int(SCREEN_HEIGHT * 0.09))) # Tamaño del enemigo
         self.rect = self.image.get_rect(center=(x, y))
         self.speed = 4 
@@ -231,37 +213,30 @@ class Enemy(pygame.sprite.Sprite):
         self.is_aggressive = False # Nuevo: el enemigo es pasivo al inicio
         self.is_attacking_anim = False # Nuevo: para la animación de ataque del enemigo
         self.attack_anim_start_time = 0 # Nuevo: para el temporizador de la animación
-
     def update(self, player_rect):
         # Resetear estado de ataque de la animación
         if pygame.time.get_ticks() - self.attack_anim_start_time > ENEMY_ATTACK_ANIM_DURATION:
             self.is_attacking_anim = False
-
         # Comprobar proximidad del jugador para volverse agresivo
         distance_to_player = math.hypot(self.rect.centerx - player_rect.centerx, self.rect.centery - player_rect.centery)
         if distance_to_player < ENEMY_AGGRO_RADIUS:
             self.is_aggressive = True
-
         if self.is_aggressive: # Solo persigue al jugador si es agresivo
             # Moverse hacia el jugador
             if self.rect.x < player_rect.x:
                 self.rect.x += self.speed
             elif self.rect.x > player_rect.x:
                 self.rect.x -= self.speed
-            
             if self.rect.y < player_rect.y:
                 self.rect.y += self.speed
             elif self.rect.y > player_rect.y:
                 self.rect.y -= self.speed
-
         # Mantener al enemigo dentro de los límites de la pantalla (excluyendo el área de la UI superior)
         self.rect.left = max(0, self.rect.left)
         self.rect.right = min(SCREEN_WIDTH, self.rect.right)
         self.rect.top = max(UI_BAR_HEIGHT, self.rect.top) # Evitar que suba a la zona de la operación
         self.rect.bottom = min(SCREEN_HEIGHT, self.rect.bottom)
-
         self.damage_taken_this_attack = False # Resetear al inicio del update del enemigo
-
     def take_damage(self, amount):
         self.health -= amount
         if self.health < 0:
@@ -270,30 +245,24 @@ class Enemy(pygame.sprite.Sprite):
             sound_enemy_hit.play()
         self.damage_taken_this_attack = True # Marca que fue dañado
         self.is_aggressive = True # El enemigo se vuelve agresivo al ser atacado
-
     def can_attack(self):
         return pygame.time.get_ticks() - self.last_attack_time > self.attack_cooldown
-
     def attack(self, player_obj):
         if self.can_attack():
             player_obj.take_damage(ENEMY_ATTACK_DAMAGE)
             self.last_attack_time = pygame.time.get_ticks()
             self.is_attacking_anim = True # Iniciar animación de ataque del enemigo
             self.attack_anim_start_time = pygame.time.get_ticks() # Iniciar temporizador de animación
-    
     def draw_health_bar(self, surface):
         bar_width = self.rect.width * 0.8
         bar_height = 5
         bar_x = self.rect.centerx - bar_width // 2
         bar_y = self.rect.top - 15 # Encima del enemigo
-
         # Fondo de la barra de vida
         pygame.draw.rect(surface, HEALTH_BAR_BACKGROUND_COLOR, (bar_x, bar_y, bar_width, bar_height), border_radius=2)
-
         # Barra de vida actual
         current_health_width = (self.health / self.max_health) * bar_width
         pygame.draw.rect(surface, HEALTH_BAR_COLOR, (bar_x, bar_y, current_health_width, bar_height), border_radius=2)
-
 
 # --- Variables Globales del Juego ---
 PLAYER_START_X = SCREEN_WIDTH // 2
@@ -304,45 +273,35 @@ collectible_objects = pygame.sprite.Group()
 goals = pygame.sprite.Group()
 obstacles = pygame.sprite.Group() # Nuevo grupo para obstáculos
 enemies = pygame.sprite.Group() # Nuevo grupo para enemigos
-
-
 all_sprites.add(player)
-
 current_operation = ""
 correct_answer = 0
 feedback_message = ""
 feedback_color = BLACK
 feedback_timer = 0
 FEEDBACK_DURATION = 1500 # milisegundos para mostrar el feedback
-
 game_state = "menu" # Posibles estados: "menu", "playing", "feedback", "level_complete", "game_over", "show_answer_popup", "controls_info"
 level = 1
 operation_type = "suma" # Tipo de operación actual
 max_number_in_op = 10 # Dificultad actual (rango máximo de números en la operación)
 max_multiplier_divisor = 5 # Dificultad actual para multiplicación/división
-
 win_frame_index = 0
 last_win_frame_time = 0
 last_level_played = 0 # Inicialmente 0 o 1, dependiendo de tu lógica
 last_level_operation_text = ""
 last_level_correct_answer = 0
-
 # Vidas del jugador para el nivel actual (se reinicia en cada nivel)
 player_current_level_lives = 1 
-
 # Vidas que determinan los "juegos" antes de volver al checkpoint
 player_checkpoint_lives = 3 
-
 # Variables de Checkpoint
 checkpoint_level = 1 # Nivel desde el que se reiniciará
 checkpoint_op_type = "suma" # Tipo de operación del checkpoint
 checkpoint_max_num = 10 # Dificultad del checkpoint
 checkpoint_max_mult_div = 5 # Dificultad de multiplicador/divisor del checkpoint
-
 # Variables para la ventana emergente
 popup_message = ""
 popup_correct_answer = 0
-
 # --- Variables para animaciones de victoria/derrota (GIFs) ---
 win_gif_frames = []
 lose_gif_frames = []
@@ -351,7 +310,6 @@ lose_frame_index = 0
 last_win_frame_time = 0
 last_lose_frame_time = 0
 GIF_FRAME_DURATION = 100 # milisegundos por frame (ajusta para la velocidad del GIF)
-
 def load_gif_frames(gif_path, scale_factor_width, scale_factor_height):
     frames = []
     try:
@@ -360,10 +318,8 @@ def load_gif_frames(gif_path, scale_factor_width, scale_factor_height):
             # Convertir el frame a un formato que Pygame pueda usar
             # Redimensionar antes de convertir a Pygame para mejor rendimiento
             frame_resized = frame.resize((int(SCREEN_WIDTH * scale_factor_width), int(SCREEN_HEIGHT * scale_factor_height)))
-            
             # Convertir el frame a un modo compatible con Pygame (RGBA para transparencia)
-            frame_rgba = frame_resized.convert("RGBA")
-            
+            frame_rgba = frame_resized.convert("RGBA")            
             # Crear la superficie de Pygame
             pygame_frame = pygame.image.fromstring(frame_rgba.tobytes(), frame_rgba.size, frame_rgba.mode)
             frames.append(pygame_frame)
@@ -374,31 +330,26 @@ def load_gif_frames(gif_path, scale_factor_width, scale_factor_height):
     except Exception as e:
         print(f"Error al cargar GIF '{gif_path}': {e}")
         return []
-
-win_gif_frames = load_gif_frames("win_animation.gif", 0.4, 0.4)
-lose_gif_frames = load_gif_frames("lose_animation.gif", 0.4, 0.4)
-
-
+win_gif_frames = load_gif_frames("assets/gifs/win_animation.gif", 0.4, 0.4)
+lose_gif_frames = load_gif_frames("assets/gifs/lose_animation.gif", 0.4, 0.4)
 # --- Imágenes para los controles (si existen) ---
 control_images = {}
 KEY_IMAGE_SIZE = int(SCREEN_WIDTH * 0.05) # Tamaño de las imágenes de las teclas
 try:
-    control_images['arrow_up'] = pygame.transform.scale(pygame.image.load("arrow_up.png").convert_alpha(), (KEY_IMAGE_SIZE, KEY_IMAGE_SIZE))
-    control_images['arrow_left'] = pygame.transform.scale(pygame.image.load("arrow_left.png").convert_alpha(), (KEY_IMAGE_SIZE, KEY_IMAGE_SIZE))
-    control_images['arrow_down'] = pygame.transform.scale(pygame.image.load("arrow_down.png").convert_alpha(), (KEY_IMAGE_SIZE, KEY_IMAGE_SIZE))
-    control_images['arrow_right'] = pygame.transform.scale(pygame.image.load("arrow_right.png").convert_alpha(), (KEY_IMAGE_SIZE, KEY_IMAGE_SIZE))
-    control_images['w_key'] = pygame.transform.scale(pygame.image.load("w_key.png").convert_alpha(), (KEY_IMAGE_SIZE, KEY_IMAGE_SIZE))
-    control_images['a_key'] = pygame.transform.scale(pygame.image.load("a_key.png").convert_alpha(), (KEY_IMAGE_SIZE, KEY_IMAGE_SIZE))
-    control_images['s_key'] = pygame.transform.scale(pygame.image.load("s_key.png").convert_alpha(), (KEY_IMAGE_SIZE, KEY_IMAGE_SIZE))
-    control_images['d_key'] = pygame.transform.scale(pygame.image.load("d_key.png").convert_alpha(), (KEY_IMAGE_SIZE, KEY_IMAGE_SIZE))
-    control_images['spacebar_key'] = pygame.transform.scale(pygame.image.load("spacebar_key.png").convert_alpha(), (KEY_IMAGE_SIZE * 1.5, KEY_IMAGE_SIZE)) # Más ancha
-    control_images['q_key'] = pygame.transform.scale(pygame.image.load("q_key.png").convert_alpha(), (KEY_IMAGE_SIZE, KEY_IMAGE_SIZE))
+    control_images['arrow_up'] = pygame.transform.scale(pygame.image.load("assets/imagenes/arrow_up.png").convert_alpha(), (KEY_IMAGE_SIZE, KEY_IMAGE_SIZE))
+    control_images['arrow_left'] = pygame.transform.scale(pygame.image.load("assets/imagenes/arrow_left.png").convert_alpha(), (KEY_IMAGE_SIZE, KEY_IMAGE_SIZE))
+    control_images['arrow_down'] = pygame.transform.scale(pygame.image.load("assets/imagenes/arrow_down.png").convert_alpha(), (KEY_IMAGE_SIZE, KEY_IMAGE_SIZE))
+    control_images['arrow_right'] = pygame.transform.scale(pygame.image.load("assets/imagenes/arrow_right.png").convert_alpha(), (KEY_IMAGE_SIZE, KEY_IMAGE_SIZE))
+    control_images['w_key'] = pygame.transform.scale(pygame.image.load("assets/imagenes/w_key.png").convert_alpha(), (KEY_IMAGE_SIZE, KEY_IMAGE_SIZE))
+    control_images['a_key'] = pygame.transform.scale(pygame.image.load("assets/imagenes/a_key.png").convert_alpha(), (KEY_IMAGE_SIZE, KEY_IMAGE_SIZE))
+    control_images['s_key'] = pygame.transform.scale(pygame.image.load("assets/imagenes/s_key.png").convert_alpha(), (KEY_IMAGE_SIZE, KEY_IMAGE_SIZE))
+    control_images['d_key'] = pygame.transform.scale(pygame.image.load("assets/imagenes/d_key.png").convert_alpha(), (KEY_IMAGE_SIZE, KEY_IMAGE_SIZE))
+    control_images['spacebar_key'] = pygame.transform.scale(pygame.image.load("assets/imagenes/spacebar_key.png").convert_alpha(), (KEY_IMAGE_SIZE * 1.5, KEY_IMAGE_SIZE)) # Más ancha
+    control_images['q_key'] = pygame.transform.scale(pygame.image.load("assets/imagenes/q_key.png").convert_alpha(), (KEY_IMAGE_SIZE, KEY_IMAGE_SIZE))
 except pygame.error as e:
     print(f"Advertencia: No se pudieron cargar todas las imágenes de teclas: {e}. Se usará texto en su lugar.")
     control_images = {} # Limpiar si no se cargaron todas
-
 # --- Funciones Auxiliares ---
-
 def draw_text(surface, text, font, color, x, y, center=True):
     text_surface = font.render(text, True, color)
     if center:
@@ -406,12 +357,10 @@ def draw_text(surface, text, font, color, x, y, center=True):
     else:
         text_rect = text_surface.get_rect(x=x, y=y)
     surface.blit(text_surface, text_rect)
-
 def draw_wrapped_text(surface, text, font, color, rect, alignment="center"):
     words = text.split(' ')
     lines = []
     current_line = []
-    
     for word in words:
         # Prueba si añadiendo la palabra actual la línea excede el ancho
         test_line = ' '.join(current_line + [word])
@@ -421,7 +370,6 @@ def draw_wrapped_text(surface, text, font, color, rect, alignment="center"):
             lines.append(' '.join(current_line))
             current_line = [word]
     lines.append(' '.join(current_line)) # Añadir la última línea
-
     y_offset = rect.top
     for line in lines:
         text_surface = font.render(line, True, color)
@@ -432,11 +380,9 @@ def draw_wrapped_text(surface, text, font, color, rect, alignment="center"):
             text_rect.left = rect.left
         elif alignment == "right":
             text_rect.right = rect.right
-        
         text_rect.top = y_offset
         surface.blit(text_surface, text_rect)
         y_offset += font.get_height() # Espacio entre líneas
-
 def draw_button(surface, rect, text, font, base_color, hover_color=None):
     mouse_pos = pygame.mouse.get_pos()
     current_color = base_color
@@ -445,14 +391,11 @@ def draw_button(surface, rect, text, font, base_color, hover_color=None):
     pygame.draw.rect(surface, current_color, rect, border_radius=10)
     draw_text(surface, text, font, BLACK, rect.centerx, rect.centery)
     return rect
-
 # --- Funciones de Lógica del Juego ---
-
 def generate_operation(op_type, max_num, max_mult_div):
     global current_operation, correct_answer
     num1 = random.randint(1, max_num)
     num2 = random.randint(1, max_num)
-
     if op_type == "suma":
         correct_answer = num1 + num2
         current_operation = f"{num1} + {num2} = ?"
@@ -473,12 +416,10 @@ def generate_operation(op_type, max_num, max_mult_div):
         correct_answer_temp = random.randint(1, max_mult_div) 
         # Asegurarse de que num2_temp no sea 0
         num2_temp = random.randint(1, max_mult_div) 
-        
         # Generar num1 como un múltiplo de num2_temp
         num1 = correct_answer_temp * num2_temp
         correct_answer = correct_answer_temp
         current_operation = f"{num1} / {num2_temp} = ?"
-    
     # Generar respuestas incorrectas "cercanas"
     incorrect_answers = set()
     while len(incorrect_answers) < 2:
@@ -488,20 +429,16 @@ def generate_operation(op_type, max_num, max_mult_div):
         if incorrect_ans > 0 and incorrect_ans != correct_answer and incorrect_ans not in incorrect_answers:
             incorrect_answers.add(incorrect_ans)
     return list(incorrect_answers) # Retorna las incorrectas para usarlas en generar metas
-
 def show_correct_answer_popup(message):
     global game_state, popup_message, popup_correct_answer, last_level_correct_answer # Asegúrate de que last_level_correct_answer sea global aquí
     game_state = "show_answer_popup"
     popup_message = message
     popup_correct_answer = last_level_correct_answer # ¡MODIFICADO! Ahora muestra la respuesta del nivel ANTERIOR
-
 def handle_player_death_logic():
     global player_checkpoint_lives, game_state, feedback_message, feedback_color, feedback_timer
-    
     player_checkpoint_lives -= 1 
     if sound_incorrect: # Sonido de fallo es más general para cualquier muerte en el nivel (por meta o daño)
          sound_incorrect.play()
-
     if player_checkpoint_lives <= 0:
         # Se ha perdido el juego, mostrar mensaje de Game Over con la respuesta
         game_state = "game_over" # Cambiar a estado game_over directamente
@@ -511,11 +448,8 @@ def handle_player_death_logic():
         generate_level(operation_type, max_number_in_op, max_multiplier_divisor) 
         player.reset_health() # Restaurar la salud del jugador
         show_correct_answer_popup(f"¡Cuidado! Vidas de checkpoint restantes: {player_checkpoint_lives}. La respuesta correcta era:")
-
-
 def generate_level(op_type, max_num_op, max_mult_div_op):
     global current_operation, correct_answer, feedback_message, feedback_color, feedback_timer, player_current_level_lives
-    
     # Limpiar grupos anteriores
     collectible_objects.empty()
     goals.empty()
@@ -523,15 +457,12 @@ def generate_level(op_type, max_num_op, max_mult_div_op):
     enemies.empty() # Limpiar enemigos anteriores
     all_sprites.empty() # Limpia todos los sprites, luego añade los nuevos y el jugador
     all_sprites.add(player) # Asegúrate de que el jugador siempre esté en el grupo
-
     player.reset_objects()
     player_current_level_lives = 1 # ¡Una vida por nivel!
     player.reset_health() # Se restaura la salud del jugador al inicio de cada nivel
     feedback_message = ""
     feedback_timer = 0
-
     incorrect_answers_for_goals = generate_operation(op_type, max_num_op, max_mult_div_op) # Genera la operación y las incorrectas
-
     # Generar las 3 metas
     goal_positions = [
         (SCREEN_WIDTH // 4, SCREEN_HEIGHT // 2 + SCREEN_HEIGHT * 0.1),
@@ -539,28 +470,23 @@ def generate_level(op_type, max_num_op, max_mult_div_op):
         (SCREEN_WIDTH * 3 // 4, SCREEN_HEIGHT // 2 + SCREEN_HEIGHT * 0.1)
     ]
     random.shuffle(goal_positions) # Mezclar para que la correcta no siempre esté en el mismo sitio
-
     # Asignar la respuesta correcta a una meta aleatoria
     all_possible_answers = incorrect_answers_for_goals
     all_possible_answers.insert(random.randint(0, 2), correct_answer) # Insertar la correcta en una posición aleatoria
-
     # Crear los objetos Goal y obtener sus rectángulos para el área de exclusión
     goal_exclusion_zones = []
     for i in range(3):
         goal = Goal(goal_positions[i][0], goal_positions[i][1], all_possible_answers[i])
         goals.add(goal)
         all_sprites.add(goal) # Añadir a todos los sprites para dibujar
-        
         # Calcular el área de exclusión alrededor de cada meta
         EXCLUSION_MARGIN_GOAL = int(SCREEN_WIDTH * 0.08) # Margen alrededor de las metas
         exclusion_rect_goal = goal.rect.inflate(goal.rect.width + EXCLUSION_MARGIN_GOAL, goal.rect.height + EXCLUSION_MARGIN_GOAL)
         goal_exclusion_zones.append(exclusion_rect_goal)
-    
     # --- Zona de exclusión para el jugador (donde no aparecerán objetos ni obstáculos) ---
     PLAYER_EXCLUSION_RADIUS = int(min(SCREEN_WIDTH, SCREEN_HEIGHT) * 0.2) # Radio de exclusión alrededor del jugador
     player_exclusion_zone = pygame.Rect(0, 0, PLAYER_EXCLUSION_RADIUS * 2, PLAYER_EXCLUSION_RADIUS * 2)
     player_exclusion_zone.center = (PLAYER_START_X, PLAYER_START_Y) # Centrar en la posición inicial del jugador
-
     # --- Generación de Obstáculos ---
     num_obstacles = random.randint(4, 8) # Número aleatorio de obstáculos
     obstacle_sizes = [
@@ -569,35 +495,27 @@ def generate_level(op_type, max_num_op, max_mult_div_op):
         (int(SCREEN_WIDTH * 0.06), int(SCREEN_HEIGHT * 0.1)),
         (int(SCREEN_WIDTH * 0.09), int(SCREEN_HEIGHT * 0.07))
     ] # Diferentes tamaños de obstáculos
-
     # Zonas que deben evitar los obstáculos: jugador (inicial), metas y un área cerca del inicio
     forbidden_zones_for_obstacles = []
     forbidden_zones_for_obstacles.extend(goal_exclusion_zones) # Obstáculos no cerca de metas
     forbidden_zones_for_obstacles.append(player_exclusion_zone) # ¡Evitar la zona del jugador!
-    
     # También evitamos la zona de la UI superior
     forbidden_zones_for_obstacles.append(pygame.Rect(0, 0, SCREEN_WIDTH, UI_BAR_HEIGHT + 20)) 
-
     # Definir cuántos serán mortales (porcentaje o número fijo)
     num_deadly_obstacles = random.randint(1, 4) # Entre 1 y 4 obstáculos mortales
-
     for i in range(num_obstacles):
         obs_width, obs_height = random.choice(obstacle_sizes)
         attempts = 0
         max_attempts_obs = 100 # Para evitar bucles infinitos
         found_valid_pos_obs = False
-
         obs_type = "solid"
         if i < num_deadly_obstacles: # Asignar los primeros 'num_deadly_obstacles' como mortales
             obs_type = "deadly"
-
         while not found_valid_pos_obs and attempts < max_attempts_obs:
             obs_x = random.randint(obs_width // 2, SCREEN_WIDTH - obs_width // 2)
             obs_y = random.randint(UI_BAR_HEIGHT + obs_height // 2, SCREEN_HEIGHT - obs_height // 2 - 20) # Evitar la parte inferior también
-            
             temp_obs_rect = pygame.Rect(0, 0, obs_width, obs_height)
             temp_obs_rect.center = (obs_x, obs_y)
-
             # Verificar solapamiento con zonas prohibidas y otros obstáculos ya generados
             is_overlapping_obs = False
             for zone in forbidden_zones_for_obstacles:
@@ -609,25 +527,20 @@ def generate_level(op_type, max_num_op, max_mult_div_op):
                     if temp_obs_rect.colliderect(existing_obs.rect.inflate(int(SCREEN_WIDTH * 0.02), int(SCREEN_HEIGHT * 0.02))): # Un pequeño margen entre obstáculos
                         is_overlapping_obs = True
                         break
-            
             if not is_overlapping_obs:
                 found_valid_pos_obs = True
-            
             attempts += 1
-        
         if found_valid_pos_obs:
             obstacle = Obstacle(obs_x, obs_y, obs_width, obs_height, obs_type)
             obstacles.add(obstacle)
             all_sprites.add(obstacle)
             # Añadir el rect del nuevo obstáculo a las zonas prohibidas para los siguientes objetos y obstáculos
             forbidden_zones_for_obstacles.append(obstacle.rect.inflate(int(SCREEN_WIDTH * 0.02), int(SCREEN_HEIGHT * 0.02))) # Añadir con un pequeño margen
-
     # --- Generar enemigos ---
     num_enemies_to_spawn = 0
     # Generar enemigos solo en niveles IMPARES (nivel 1, 3, 5, etc.)
     if level % 2 != 0 and level >= 1: # Empezar a generar enemigos desde el nivel 1 si es impar
         num_enemies_to_spawn = random.randint(1, 1 + level // 5) # Más enemigos en niveles más altos, cada 5 niveles aumenta 1
-
     for _ in range(num_enemies_to_spawn):
         found_valid_pos_enemy = False
         attempts = 0
@@ -635,10 +548,8 @@ def generate_level(op_type, max_num_op, max_mult_div_op):
         while not found_valid_pos_enemy and attempts < max_attempts_enemy:
             enemy_x = random.randint(SCREEN_WIDTH // 4, SCREEN_WIDTH * 3 // 4)
             enemy_y = random.randint(UI_BAR_HEIGHT + 30, SCREEN_HEIGHT - int(SCREEN_HEIGHT * 0.15))
-
             temp_enemy_rect = pygame.Rect(0,0, int(SCREEN_WIDTH * 0.06), int(SCREEN_HEIGHT * 0.08))
             temp_enemy_rect.center = (enemy_x, enemy_y)
-
             is_overlapping_enemy = False
             for zone in forbidden_zones_for_obstacles: # Usamos las mismas zonas para enemigos
                 if temp_enemy_rect.colliderect(zone):
@@ -649,23 +560,18 @@ def generate_level(op_type, max_num_op, max_mult_div_op):
                     if temp_enemy_rect.colliderect(existing_enemy.rect.inflate(int(SCREEN_WIDTH * 0.02), int(SCREEN_HEIGHT * 0.02))):
                         is_overlapping_enemy = True
                         break
-            
             if not is_overlapping_enemy:
                 found_valid_pos_enemy = True
-            
             attempts += 1
-
         if found_valid_pos_enemy:
             enemy = Enemy(enemy_x, enemy_y)
             enemies.add(enemy)
             all_sprites.add(enemy)
             forbidden_zones_for_obstacles.append(enemy.rect.inflate(int(SCREEN_WIDTH * 0.04), int(SCREEN_HEIGHT * 0.04))) # Añadir al grupo de zonas prohibidas
-
     # --- Generar objetos coleccionables ---
     # Calcular cuántos objetos faltan para la respuesta correcta, si generamos enemigos, generamos menos objetos inicialmente
     initial_objects_needed = correct_answer - num_enemies_to_spawn # Cada enemigo derrotado da un objeto
     num_objects_to_spawn = max(0, initial_objects_needed) + random.randint(5,10) # Algunos extra además de los necesarios
-    
     # Combina las zonas de exclusión de metas, obstáculos, enemigos y la zona del jugador para los objetos coleccionables
     all_exclusion_zones_for_objects = list(goal_exclusion_zones)
     for obs in obstacles:
@@ -673,32 +579,25 @@ def generate_level(op_type, max_num_op, max_mult_div_op):
     for enemy in enemies:
         all_exclusion_zones_for_objects.append(enemy.rect.inflate(int(SCREEN_WIDTH * 0.06), int(SCREEN_HEIGHT * 0.06))) # Evitar que objetos aparezcan justo sobre enemigos
     all_exclusion_zones_for_objects.append(player_exclusion_zone) # ¡Aquí también excluimos la zona del jugador para los objetos!
-
     # Define un margen mínimo entre objetos coleccionables
     OBJECT_SPACING_MARGIN = int(SCREEN_WIDTH * 0.05) # Mínima distancia entre centros de objetos
-
     generated_object_positions = [] # Para almacenar las posiciones de los objetos ya generados
-
     for _ in range(num_objects_to_spawn):
         found_valid_pos = False
         attempts = 0
         max_attempts_obj = 150 # Para evitar bucles infinitos en la generación de objetos
-        
         while not found_valid_pos and attempts < max_attempts_obj:
             # Posiciones aleatorias para los objetos, evitando la zona de la UI superior y la parte inferior
             obj_x = random.randint(int(SCREEN_WIDTH * 0.03), SCREEN_WIDTH - int(SCREEN_WIDTH * 0.03))
             obj_y = random.randint(UI_BAR_HEIGHT + int(SCREEN_HEIGHT * 0.03), SCREEN_HEIGHT - int(SCREEN_HEIGHT * 0.1)) # Evitar zona de metas en el medio y parte inferior
-
             temp_obj_rect = pygame.Rect(0,0, int(SCREEN_WIDTH * 0.03), int(SCREEN_HEIGHT * 0.04)) # Rect provisional para comprobar la posición
             temp_obj_rect.center = (obj_x, obj_y)
-
             is_overlapping = False
             # Verificar solapamiento con zonas de exclusión (metas, obstáculos, enemigos, y AHORA la zona del jugador)
             for zone in all_exclusion_zones_for_objects:
                 if temp_obj_rect.colliderect(zone):
                     is_overlapping = True
                     break
-            
             # Verificar solapamiento con otros objetos ya generados
             if not is_overlapping:
                 for existing_pos in generated_object_positions:
@@ -706,72 +605,54 @@ def generate_level(op_type, max_num_op, max_mult_div_op):
                     if distance < OBJECT_SPACING_MARGIN:
                         is_overlapping = True
                         break
-            
             if not is_overlapping:
                 found_valid_pos = True
-            
             attempts += 1
-
         if found_valid_pos: # Si encontramos una posición válida, creamos el objeto
             obj = CollectibleObject(obj_x, obj_y)
             collectible_objects.add(obj)
             all_sprites.add(obj) # Añadir a todos los sprites para dibujar
             generated_object_positions.append((obj_x, obj_y)) # Guardar la posición
-        # else:
-            # print("Advertencia: No se pudo encontrar una posición válida para un objeto.")
-
     player.rect.center = (PLAYER_START_X, PLAYER_START_Y) # Resetear posición del jugador a la posición inicial definida
-
 def reset_game_to_checkpoint():
     global level, operation_type, max_number_in_op, max_multiplier_divisor, player_checkpoint_lives, checkpoint_level, checkpoint_op_type, checkpoint_max_num, checkpoint_max_mult_div
-    
     level = checkpoint_level # Vuelve al nivel del checkpoint
     operation_type = checkpoint_op_type # Vuelve al tipo de operación del checkpoint
     max_number_in_op = checkpoint_max_num # Vuelve a la dificultad del checkpoint
     max_multiplier_divisor = checkpoint_max_mult_div # Vuelve a la dificultad de mult/div del checkpoint
     player_checkpoint_lives = 3 # ¡Siempre 3 vidas al reiniciar desde un checkpoint!
     player.reset_health() # También restaurar la salud del jugador
-
     generate_level(operation_type, max_number_in_op, max_multiplier_divisor) # Genera el nivel desde el checkpoint
-
 def show_controls_popup():
     global game_state
     game_state = "controls_info"
-
 def draw_controls_popup(surface):
     # Crear una superficie semi-transparente para el fondo oscuro
     overlay = pygame.Surface((SCREEN_WIDTH, SCREEN_HEIGHT), pygame.SRCALPHA)
     overlay.fill((0, 0, 0, 180)) # Negro con 180 de opacidad (de 255)
     surface.blit(overlay, (0, 0))
-
     # Dimensiones de la ventana emergente
     popup_width = int(SCREEN_WIDTH * 0.7)
     popup_height = int(SCREEN_HEIGHT * 0.8)
     popup_x = SCREEN_WIDTH // 2 - popup_width // 2
     popup_y = SCREEN_HEIGHT // 2 - popup_height // 2
     popup_rect = pygame.Rect(popup_x, popup_y, popup_width, popup_height)
-    
     pygame.draw.rect(surface, WHITE, popup_rect, border_radius=15)
     pygame.draw.rect(surface, BLACK, popup_rect, 5, border_radius=15) # Borde
-
     draw_text(surface, "Controles y Objetivo del Juego", font_popup_title, BLACK, SCREEN_WIDTH // 2, popup_y + int(popup_height * 0.08))
-
-    # --- Mostrar controles con imágenes y texto ---
+    # ---Mostrar controles con imágenes y texto ---
     controls_start_y = popup_y + int(popup_height * 0.08)
     line_height = int(font_popup_text.get_height() * 3.2) # Espacio entre líneas
     key_image_y_offset = int(line_height * 0.8) # Offset para centrar la imagen de la tecla verticalmente
-
     control_definitions = [
         (("arrow_up", "arrow_left", "arrow_down", "arrow_right"), "Moverse (Teclas de Flecha)"),
         (("w_key", "a_key", "s_key", "d_key"), "Moverse (W, A, S, D)"),
         ("spacebar_key", "Atacar"),
         ("q_key", "Soltar Objeto")
     ]
-    
     current_y = controls_start_y
     for item in control_definitions:
         x_offset = popup_x + 40 # Posición inicial X para el texto
-        
         if isinstance(item[0], tuple): # Múltiples imágenes de teclas
             for key_img_name in item[0]:
                 if key_img_name in control_images:
@@ -790,11 +671,9 @@ def draw_controls_popup(surface):
             else: # Fallback a texto si no hay imagen
                 draw_text(surface, f"{item[0].replace('_key', '').upper()} : {item[1]}", font_popup_text, BLACK, x_offset, current_y + key_image_y_offset, center=False)
         current_y += line_height
-
     # Objetivo del juego
     objective_text_start_y = current_y + int(popup_height * 0.05)
     draw_text(surface, "OBJETIVO DEL JUEGO:", font_popup_text, BLACK, popup_x + 40, objective_text_start_y, center=False)
-    
     objective_lines = [
         "Resuelve la operación matemática en la parte superior.",
         "Recolecta la cantidad de zapaatos que es la respuesta correcta.",
@@ -804,13 +683,10 @@ def draw_controls_popup(surface):
         "Cada 10 niveles se guarda un checkpoint y recuperas vidas.",
         "¡Evita quedarte sin vidas de checkpoint!"
     ]
-    
     obj_line_y = objective_text_start_y + font_popup_text.get_height() + 10
     for line in objective_lines:
         draw_text(surface, line, font_popup_text, BLACK, popup_x + 60, obj_line_y, center=False)
         obj_line_y += font_popup_text.get_height() + 5
-
-
     # Botón "Entendido"
     button_width = int(SCREEN_WIDTH * 0.15)
     button_height = int(SCREEN_HEIGHT * 0.07)
@@ -823,17 +699,13 @@ def draw_controls_popup(surface):
     )
     # Dibuja el botón y retorna su rect. La lógica de clic se maneja en el bucle principal.
     return draw_button(surface, button_rect, "Entendido", font_button, BUTTON_COLOR, HOVER_COLOR)
-
-
 # --- Bucle Principal del Juego ---
 running = True
 clock = pygame.time.Clock()
-
 while running:
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
             running = False
-        
         if event.type == pygame.MOUSEBUTTONDOWN:
             if game_state == "menu":
                 # Botones del menú
@@ -842,11 +714,9 @@ while running:
                 checkpoint_level = 1
                 player_checkpoint_lives = 3
                 player.reset_health() # Asegurar salud completa al iniciar
-
                 # Ajustar posiciones y tamaños de botones para pantalla completa
                 button_width = int(SCREEN_WIDTH * 0.3)
                 button_height = int(SCREEN_HEIGHT * 0.1)
-                
                 # ¡Ajuste de posiciones de los botones para dejar espacio al título!
                 sum_btn_rect = pygame.Rect(SCREEN_WIDTH // 2 - button_width // 2, SCREEN_HEIGHT // 2 - button_height * 2.2, button_width, button_height) # Ajustado
                 subtract_btn_rect = pygame.Rect(SCREEN_WIDTH // 2 - button_width // 2, SCREEN_HEIGHT // 2 - button_height * 1, button_width, button_height) # Ajustado
@@ -854,8 +724,6 @@ while running:
                 divide_btn_rect = pygame.Rect(SCREEN_WIDTH // 2 - button_width // 2, SCREEN_HEIGHT // 2 + button_height * 1.4, button_width, button_height) # Ajustado
                 controls_btn_rect = pygame.Rect(SCREEN_WIDTH // 2 - button_width // 2, SCREEN_HEIGHT // 2 + button_height * 2.6, button_width, button_height) # Nuevo botón Controles
                 exit_btn_rect = pygame.Rect(SCREEN_WIDTH // 2 - button_width // 2, SCREEN_HEIGHT // 2 + button_height * 3.8, button_width, button_height) # Nuevo botón Salir, ajustado
-
-
                 if sum_btn_rect.collidepoint(event.pos):
                     operation_type = "suma"
                     max_number_in_op = 10 # Inicio para sumas/restas
@@ -896,8 +764,6 @@ while running:
                     show_controls_popup()
                 elif exit_btn_rect.collidepoint(event.pos): # Lógica del botón Salir
                     running = False
-
-
             elif game_state == "playing":
                 # Botón para volver al menú de operadores en el estado "playing"
                 menu_btn_rect = pygame.Rect(SCREEN_WIDTH - int(SCREEN_WIDTH * 0.15) - 20, 10, int(SCREEN_WIDTH * 0.15), UI_BAR_HEIGHT - 20)
@@ -917,16 +783,12 @@ while running:
                     all_sprites.add(player) # Asegurarse de que el jugador siga en el grupo
                     feedback_message = ""
                     feedback_timer = 0
-
-
             elif game_state == "level_complete":
                 # Al hacer clic después de completar un nivel, pasar al siguiente
                 # El clic puede ser en cualquier parte de la pantalla si solo hay un mensaje.
                 # O podríamos tener un botón "Continuar" explícito. Por ahora, cualquier clic.
                 if sound_win: sound_win.stop() # Detener sonido de victoria si está reproduciéndose
-                
                 level += 1
-                
                 # --- Lógica de progresión de dificultad ---
                 # Progresión para números de suma/resta
                 if operation_type in ["suma", "resta"]:
@@ -938,7 +800,6 @@ while running:
                         max_number_in_op = 30
                     else:
                         max_number_in_op = 50 # Y así sucesivamente
-                
                 # Progresión para multiplicadores/divisores en multiplicación/división
                 elif operation_type in ["multiplicacion", "division"]:
                     if level <= 5:
@@ -952,11 +813,9 @@ while running:
                     # Para divisiones, el número a dividir también puede aumentar un poco más
                     if operation_type == "division":
                         max_number_in_op = max_multiplier_divisor * 5 # Aumenta el dividendo
-                
                 # Tipo de operación cambia cada 5 niveles
                 if level > 1 and (level - 1) % 5 == 0:
                     operation_type = random.choice(["suma", "resta", "multiplicacion", "division"])
-
                 # --- Lógica de Checkpoint ---
                 # Si el nivel que acaba de completar es un múltiplo de 10, guardar checkpoint
                 if (level - 1) % 10 == 0 and level > 1:
@@ -969,13 +828,11 @@ while running:
                 player.reset_health() # Restaurar salud del jugador al iniciar un nuevo nivel
                 game_state = "playing"
                 generate_level(operation_type, max_number_in_op, max_multiplier_divisor)
-
             elif game_state == "game_over":
                 # Si el jugador hace clic en Game Over, reinicia desde el último checkpoint
                 # O si hace clic en el botón de cambiar operador
                 game_over_continue_btn_rect = pygame.Rect(SCREEN_WIDTH // 2 - int(SCREEN_WIDTH * 0.2) // 2, SCREEN_HEIGHT // 2 + int(SCREEN_HEIGHT * 0.15), int(SCREEN_WIDTH * 0.2), int(SCREEN_HEIGHT * 0.08))
                 game_over_menu_btn_rect = pygame.Rect(SCREEN_WIDTH // 2 - int(SCREEN_WIDTH * 0.2) // 2, SCREEN_HEIGHT // 2 + int(SCREEN_HEIGHT * 0.25), int(SCREEN_WIDTH * 0.2), int(SCREEN_HEIGHT * 0.08))
-
                 if game_over_continue_btn_rect.collidepoint(event.pos):
                     if sound_game_over: sound_game_over.stop() # Detener sonido de game over
                     game_state = "playing"
@@ -997,7 +854,6 @@ while running:
                     all_sprites.add(player)
                     feedback_message = ""
                     feedback_timer = 0
-            
             elif game_state == "show_answer_popup":
                 # Lógica del botón "Cerrar" en la ventana emergente
                 popup_button_width = int(SCREEN_WIDTH * 0.15)
@@ -1015,7 +871,6 @@ while running:
                         if sound_game_over: sound_game_over.play()
                     else: # Si aún le quedan vidas, volvemos a playing para que se regenere el nivel
                         game_state = "playing"
-            
             # NUEVO: Lógica de clic para el botón "Entendido" en el popup de controles
             elif game_state == "controls_info":
                 button_width = int(SCREEN_WIDTH * 0.15)
@@ -1031,29 +886,23 @@ while running:
                 popup_height = int(SCREEN_HEIGHT * 0.8)
                 popup_x = SCREEN_WIDTH // 2 - popup_width // 2
                 popup_y = SCREEN_HEIGHT // 2 - popup_height // 2
-                
                 button_rect_for_click_check = pygame.Rect(
                     SCREEN_WIDTH // 2 - button_width // 2,
                     popup_y + popup_height - button_height - 20, # Usa la misma lógica que en draw_controls_popup
                     button_width,
                     button_height
                 )
-                
                 if button_rect_for_click_check.collidepoint(event.pos):
                      game_state = "menu" # Vuelve al menú
-
-
         if event.type == pygame.KEYDOWN:
             if game_state == "playing":
                 if event.key == pygame.K_q: # Tecla 'Q' para soltar objetos
-                    player.drop_object()
-                                        
+                    player.drop_object()                      
     # --- Actualizaciones del Juego ---
     if game_state == "playing":
         keys = pygame.key.get_pressed()
         player.update(keys)
         enemies.update(player.rect) # Actualiza la posición de los enemigos
-
         # Colisión del jugador con obstáculos
         collided_obstacles = pygame.sprite.spritecollide(player, obstacles, False) # False: no remueve el obstáculo
         for obs in collided_obstacles:
@@ -1065,7 +914,6 @@ while running:
                 if player.health <= 0: # Verificar si la salud llegó a 0 *después* de aplicar el daño
                     handle_player_death_logic()
                     break # Salir del bucle si el jugador muere
-
         # Colisión del jugador con enemigos
         collided_enemies = pygame.sprite.spritecollide(player, enemies, False)
         for enemy in collided_enemies:
@@ -1086,12 +934,10 @@ while running:
                 # Ya la reseteamos al inicio del `enemy.update()`.
                 if enemy.is_aggressive:
                     enemy.attack(player)
-        
         # Colisión con objetos coleccionables
         collected = pygame.sprite.spritecollide(player, collectible_objects, True) # True: remueve el objeto
         for obj in collected:
             player.add_object()
-
         # Colisión con metas
         collided_goal = None
         for goal in goals:
@@ -1099,7 +945,6 @@ while running:
             if player.rect.colliderect(goal.collision_rect): 
                 collided_goal = goal
                 break # Solo procesar una colisión de meta a la vez
-
         if collided_goal: # Si el jugador colisionó con CUALQUIER meta (con su collision_rect)
             last_level_correct_answer=correct_answer
             if player.collected_objects == correct_answer:
@@ -1123,79 +968,57 @@ while running:
                     handle_player_death_logic() # Llama a la función de muerte si se agotan vidas del nivel
                 else:
                     show_correct_answer_popup(f"Necesitas {correct_answer} objetos. Tienes {player.collected_objects}. La respuesta correcta era:")
-            
             # Después de la interacción con la meta, mover al jugador un poco para evitar múltiples colisiones instantáneas
             player.rect.center = (player.rect.centerx, player.rect.centery + int(SCREEN_HEIGHT * 0.05))
             # No break, para que se pueda seguir moviendo aunque colisione con una meta y falle
-        
         # Comprobar si el jugador ha muerto por salud
         if player.health <= 0 and game_state == "playing": # Asegurarse de que no se llama varias veces
             handle_player_death_logic()
-            
-
-
     # --- Dibujado / Renderizado ---
     screen.fill(BLUE_LIGHT)
-
     if game_state == "menu":
         draw_text(screen, "Las Aventuras De Tralalero Tralala", font_large, BLACK, SCREEN_WIDTH // 2, SCREEN_HEIGHT // 5)
-        
         button_width = int(SCREEN_WIDTH * 0.3)
         button_height = int(SCREEN_HEIGHT * 0.1)
-
         sum_btn_rect = draw_button(screen, pygame.Rect(SCREEN_WIDTH // 2 - button_width // 2, SCREEN_HEIGHT // 2 - button_height * 2.2, button_width, button_height), "Sumas", font_button, BUTTON_COLOR, HOVER_COLOR)
         subtract_btn_rect = draw_button(screen, pygame.Rect(SCREEN_WIDTH // 2 - button_width // 2, SCREEN_HEIGHT // 2 - button_height * 1, button_width, button_height), "Restas", font_button, BUTTON_COLOR, HOVER_COLOR)
         multiply_btn_rect = draw_button(screen, pygame.Rect(SCREEN_WIDTH // 2 - button_width // 2, SCREEN_HEIGHT // 2 + button_height * 0.2, button_width, button_height), "Multiplicación", font_button, BUTTON_COLOR, HOVER_COLOR)
         divide_btn_rect = draw_button(screen, pygame.Rect(SCREEN_WIDTH // 2 - button_width // 2, SCREEN_HEIGHT // 2 + button_height * 1.4, button_width, button_height), "Divisiones", font_button, BUTTON_COLOR, HOVER_COLOR)
         controls_btn_rect = draw_button(screen, pygame.Rect(SCREEN_WIDTH // 2 - button_width // 2, SCREEN_HEIGHT // 2 + button_height * 2.6, button_width, button_height), "Controles", font_button, YELLOW_LIGHT, (255, 255, 200))
         exit_btn_rect = draw_button(screen, pygame.Rect(SCREEN_WIDTH // 2 - button_width // 2, SCREEN_HEIGHT // 2 + button_height * 3.8, button_width, button_height), "Salir", font_button, RED, (255, 100, 100))
-
-
     elif game_state in ["playing", "feedback", "level_complete", "show_answer_popup"]: # Dibuja el juego de fondo si el popup está activo
-        
         # Dibujar área de UI superior
         pygame.draw.rect(screen, WHITE, (0, 0, SCREEN_WIDTH, UI_BAR_HEIGHT))
-        
         # Mostrar la operación actual - Centrado
         draw_text(screen, current_operation, font_operation, BLACK, SCREEN_WIDTH // 2, UI_BAR_HEIGHT // 2)
-
         # Mostrar vidas de checkpoint (izquierda)
         draw_text(screen, f"Vidas: {player_checkpoint_lives}", font_lives, BLACK, int(SCREEN_WIDTH * 0.1), UI_BAR_HEIGHT // 2) 
-        
         # Mostrar nivel (izquierda, debajo de vidas o al lado)
         draw_text(screen, f"Nivel: {level}", font_lives, BLACK, int(SCREEN_WIDTH * 0.25), UI_BAR_HEIGHT // 2)
-
         # Mostrar salud del jugador (derecha, al lado de objetos)
         draw_text(screen, f"Salud: {player.health}", font_health, BLACK, SCREEN_WIDTH - int(SCREEN_WIDTH * 0.25), UI_BAR_HEIGHT // 2) 
-        
         # Botón para volver al menú de operadores
         menu_btn_rect = pygame.Rect(SCREEN_WIDTH - int(SCREEN_WIDTH * 0.15) - 20, 10, int(SCREEN_WIDTH * 0.15), UI_BAR_HEIGHT - 20)
         draw_button(screen, menu_btn_rect, "Menú", font_button, BUTTON_COLOR, HOVER_COLOR)
-
         # Dibujar todos los sprites (jugador, objetos, metas, obstáculos, enemigos)
         all_sprites.draw(screen)
-
         # Dibujar barras de vida de los enemigos
         for enemy in enemies:
             enemy.draw_health_bar(screen)
-
         # Si el jugador está atacando, dibujar un indicador visual
         if player.is_attacking and pygame.time.get_ticks() - player.attack_anim_start_time < PLAYER_ATTACK_ANIM_DURATION:
             attack_indicator_rect = pygame.Rect(0, 0, player.rect.width + 20, player.rect.height + 20)
             attack_indicator_rect.center = player.rect.center
             pygame.draw.circle(screen, PLAYER_ATTACK_COLOR, attack_indicator_rect.center, attack_indicator_rect.width // 2, 3)
-
         # Dibujar animación de ataque de los enemigos
         for enemy in enemies:
             if enemy.is_attacking_anim and pygame.time.get_ticks() - enemy.attack_anim_start_time < ENEMY_ATTACK_ANIM_DURATION:
                 enemy_attack_rect = enemy.rect.inflate(10, 10) # Ligeramente más grande que el enemigo
                 pygame.draw.rect(screen, ENEMY_ATTACK_COLOR, enemy_attack_rect, 2) # Dibujar un borde rojo
-
         # Mostrar mensaje de feedback (si hay alguno y el estado no es el popup, ya que el popup lo reemplaza)
         # Este feedback solo se mostrará si no está activo el popup de respuesta.
         if feedback_message and game_state != "show_answer_popup" and game_state != "level_complete":
             draw_text(screen, feedback_message, font_feedback, feedback_color, SCREEN_WIDTH // 2, SCREEN_HEIGHT - int(SCREEN_HEIGHT * 0.07))
-            
         if game_state == "level_complete":
             # Animación de victoria (GIF)
             if win_gif_frames:
@@ -1203,41 +1026,32 @@ while running:
                 if current_time - last_win_frame_time > GIF_FRAME_DURATION:
                     win_frame_index = (win_frame_index + 1) % len(win_gif_frames)
                     last_win_frame_time = current_time
-                
                 current_win_frame = win_gif_frames[win_frame_index]
                 image_rect = current_win_frame.get_rect(center=(SCREEN_WIDTH // 2, SCREEN_HEIGHT // 2 - int(SCREEN_HEIGHT * 0.1)))
                 screen.blit(current_win_frame, image_rect)
-            
             draw_text(screen, "¡NIVEL COMPLETADO!", font_large, GREEN, SCREEN_WIDTH // 2, SCREEN_HEIGHT // 2 + int(SCREEN_HEIGHT * 0.1))
             draw_text(screen, "¡Haz clic para el siguiente nivel!", font_feedback, BLACK, SCREEN_WIDTH // 2, SCREEN_HEIGHT // 2 + int(SCREEN_HEIGHT * 0.2))
-
         # Mostrar contador de objetos (abajo a la derecha) - DIBUJAR AL FINAL PARA ESTAR SIEMPRE AL FRENTE
         draw_text(screen, f"Objetos: {player.collected_objects}", font_counter, BLACK, SCREEN_WIDTH - int(SCREEN_WIDTH * 0.1), SCREEN_HEIGHT - int(SCREEN_HEIGHT * 0.05))
-
         # --- Dibuja la ventana emergente si el estado es show_answer_popup ---
         if game_state == "show_answer_popup":
             # Crear una superficie semi-transparente para el fondo oscuro
             overlay = pygame.Surface((SCREEN_WIDTH, SCREEN_HEIGHT), pygame.SRCALPHA)
             overlay.fill((0, 0, 0, 180)) # Negro con 180 de opacidad (de 255)
             screen.blit(overlay, (0, 0))
-
             # Dimensiones de la ventana emergente
             popup_width = int(SCREEN_WIDTH * 0.6)
             popup_height = int(SCREEN_HEIGHT * 0.5) # Aumentar un poco la altura para más texto
             popup_x = SCREEN_WIDTH // 2 - popup_width // 2
             popup_y = SCREEN_HEIGHT // 2 - popup_height // 2
             popup_rect = pygame.Rect(popup_x, popup_y, popup_width, popup_height)
-            
             pygame.draw.rect(screen, WHITE, popup_rect, border_radius=15)
             pygame.draw.rect(screen, BLACK, popup_rect, 5, border_radius=15) # Borde
-
             # Área para el mensaje principal (dentro del popup)
             message_area_rect = pygame.Rect(popup_x + 20, popup_y + 20, popup_width - 40, popup_height * 0.4)
             draw_wrapped_text(screen, popup_message, font_medium, BLACK, message_area_rect)
-
             # Respuesta correcta
             draw_text(screen, str(popup_correct_answer), font_large, GREEN, SCREEN_WIDTH // 2, popup_y + int(popup_height * 0.65))
-
             # Botón "Cerrar"
             popup_button_width = int(SCREEN_WIDTH * 0.15)
             popup_button_height = int(SCREEN_HEIGHT * 0.07)
@@ -1248,8 +1062,6 @@ while running:
                 popup_button_height
             )
             draw_button(screen, popup_button_rect, "Cerrar", font_button, BUTTON_COLOR, HOVER_COLOR)
-
-
     elif game_state == "game_over":
         # Animación de derrota (GIF)
         if lose_gif_frames:
@@ -1257,28 +1069,20 @@ while running:
             if current_time - last_lose_frame_time > GIF_FRAME_DURATION:
                 lose_frame_index = (lose_frame_index + 1) % len(lose_gif_frames)
                 last_lose_frame_time = current_time
-            
             current_lose_frame = lose_gif_frames[lose_frame_index]
             image_rect = current_lose_frame.get_rect(center=(SCREEN_WIDTH // 2, SCREEN_HEIGHT // 2 - int(SCREEN_HEIGHT * 0.15)))
             screen.blit(current_lose_frame, image_rect)
-
         draw_text(screen, "¡GAME OVER!", font_large, RED, SCREEN_WIDTH // 2, SCREEN_HEIGHT // 2 + int(SCREEN_HEIGHT * 0.05))
         draw_text(screen, f"Alcanzaste el Nivel: {level}", font_medium, BLACK, SCREEN_WIDTH // 2, SCREEN_HEIGHT // 2 + int(SCREEN_HEIGHT * 0.15))
-        
         # Botones de Game Over
         game_over_continue_btn_rect = pygame.Rect(SCREEN_WIDTH // 2 - int(SCREEN_WIDTH * 0.2) // 2, SCREEN_HEIGHT // 2 + int(SCREEN_HEIGHT * 0.25), int(SCREEN_WIDTH * 0.2), int(SCREEN_HEIGHT * 0.08))
         draw_button(screen, game_over_continue_btn_rect, "Continuar", font_button, BUTTON_COLOR, HOVER_COLOR)
-        
         game_over_menu_btn_rect = pygame.Rect(SCREEN_WIDTH // 2 - int(SCREEN_WIDTH * 0.2) // 2, SCREEN_HEIGHT // 2 + int(SCREEN_HEIGHT * 0.35), int(SCREEN_WIDTH * 0.2), int(SCREEN_HEIGHT * 0.08))
         draw_button(screen, game_over_menu_btn_rect, "Cambiar Operador", font_button, BUTTON_COLOR, HOVER_COLOR)
-    
     elif game_state == "controls_info":
         # El draw_controls_popup ahora devuelve el rect del botón, lo usamos para la detección de clic
         controls_button_rect = draw_controls_popup(screen)
         # Nota: La detección de clic para este botón se movió al inicio del bucle de eventos para mejor manejo.
-
-
     pygame.display.flip()
     clock.tick(60)
-
 pygame.quit()
