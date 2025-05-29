@@ -323,6 +323,9 @@ max_multiplier_divisor = 5 # Dificultad actual para multiplicación/división
 
 win_frame_index = 0
 last_win_frame_time = 0
+last_level_played = 0 # Inicialmente 0 o 1, dependiendo de tu lógica
+last_level_operation_text = ""
+last_level_correct_answer = 0
 
 # Vidas del jugador para el nivel actual (se reinicia en cada nivel)
 player_current_level_lives = 1 
@@ -487,10 +490,10 @@ def generate_operation(op_type, max_num, max_mult_div):
     return list(incorrect_answers) # Retorna las incorrectas para usarlas en generar metas
 
 def show_correct_answer_popup(message):
-    global game_state, popup_message, popup_correct_answer
+    global game_state, popup_message, popup_correct_answer, last_level_correct_answer # Asegúrate de que last_level_correct_answer sea global aquí
     game_state = "show_answer_popup"
     popup_message = message
-    popup_correct_answer = correct_answer # La respuesta correcta global
+    popup_correct_answer = last_level_correct_answer # ¡MODIFICADO! Ahora muestra la respuesta del nivel ANTERIOR
 
 def handle_player_death_logic():
     global player_checkpoint_lives, game_state, feedback_message, feedback_color, feedback_timer
@@ -1098,6 +1101,7 @@ while running:
                 break # Solo procesar una colisión de meta a la vez
 
         if collided_goal: # Si el jugador colisionó con CUALQUIER meta (con su collision_rect)
+            last_level_correct_answer=correct_answer
             if player.collected_objects == correct_answer:
                 if collided_goal.value == correct_answer:
                     feedback_message = "¡Correcto! ¡Siguiente Nivel!"
@@ -1127,6 +1131,7 @@ while running:
         # Comprobar si el jugador ha muerto por salud
         if player.health <= 0 and game_state == "playing": # Asegurarse de que no se llama varias veces
             handle_player_death_logic()
+            
 
 
     # --- Dibujado / Renderizado ---
