@@ -1,3 +1,5 @@
+# videojuego.py
+
 import pygame
 import random
 import math
@@ -31,6 +33,9 @@ ENEMY_ATTACK_COLOR = (255, 0, 0) # Color para indicar ataque del enemigo
 POPUP_BACKGROUND_COLOR = (200, 200, 200, 180) # Gris semi-transparente para el fondo del popup
 HEALTH_BAR_COLOR = (50, 200, 50) # Color para la barra de vida del enemigo
 HEALTH_BAR_BACKGROUND_COLOR = (100, 0, 0) # Fondo de la barra de vida del enemigo
+PLAYER_HEALTH_BAR_COLOR = (0, 255, 0)  # Color para la barra de vida del jugador
+PLAYER_HEALTH_BAR_BACKGROUND_COLOR = (255, 0, 0) # Fondo de la barra de vida del jugador
+
 
 # --- Fuentes ---
 font_large = pygame.font.Font(None, int(SCREEN_HEIGHT * 0.15)) # Para el título, Game Over
@@ -97,6 +102,7 @@ class Player(pygame.sprite.Sprite):
         self.collected_objects = 0
         self.prev_rect = self.rect.copy() # Para revertir posición en colisiones con obstáculos
         self.health = PLAYER_INITIAL_HEALTH
+        self.max_health = PLAYER_INITIAL_HEALTH # MODIFICADO: Añadir max_health para la barra
         self.is_attacking = False
         self.last_attack_time = 0
         self.attack_anim_start_time = 0 # Nuevo para la animación
@@ -149,6 +155,21 @@ class Player(pygame.sprite.Sprite):
             self.last_hit_time = current_time # Reiniciar el temporizador de invulnerabilidad
     def reset_health(self):
         self.health = PLAYER_INITIAL_HEALTH
+    def draw_health_bar(self, surface):
+        if self.health > 0 : # Solo dibujar si tiene vida
+            bar_width = self.rect.width * 0.8 # Un poco más ancha que el jugador
+            bar_height = 8 # Altura de la barra
+            bar_x = self.rect.centerx - bar_width // 2 # Centrada sobre el jugador
+            bar_y = self.rect.top - 15 # 15 píxeles por encima del jugador
+
+            # Fondo de la barra de vida
+            pygame.draw.rect(surface, PLAYER_HEALTH_BAR_BACKGROUND_COLOR, (bar_x, bar_y, bar_width, bar_height), border_radius=3)
+            # Barra de vida actual
+            current_health_width = (self.health / self.max_health) * bar_width
+            if current_health_width > 0: # Solo dibujar la barra verde si hay vida
+                 pygame.draw.rect(surface, PLAYER_HEALTH_BAR_COLOR, (bar_x, bar_y, current_health_width, bar_height), border_radius=3)
+
+
 class CollectibleObject(pygame.sprite.Sprite):
     def __init__(self, x, y):
         super().__init__()
@@ -181,16 +202,14 @@ class Obstacle(pygame.sprite.Sprite):
         # Para empezar, un simple rectángulo. Puedes reemplazar con una imagen.
         self.image = pygame.Surface((width, height))
         if self.type == "solid":
-            self.image.fill(SOLID_OBSTACLE_COLOR) # Color marrón para un obstáculo sólido
-            self.image = pygame.image.load("assets/imagenes/rock.png").convert_alpha(); self.image = pygame.transform.scale(self.image, (width, height))
+            # self.image.fill(SOLID_OBSTACLE_COLOR) # Color marrón para un obstáculo sólido # Comentado para priorizar imagen
             try: # Cargar imagen de roca
                 self.image = pygame.image.load("assets/imagenes/rock.png").convert_alpha()
                 self.image = pygame.transform.scale(self.image, (width, height))
             except pygame.error:
                 self.image.fill(SOLID_OBSTACLE_COLOR) # Si la imagen no se carga, usa el color
         elif self.type == "deadly":
-            self.image.fill(DEADLY_OBSTACLE_COLOR) # Color rojo para un obstáculo mortal
-            self.image = pygame.image.load("assets/imagenes/lava.png").convert_alpha(); self.image = pygame.transform.scale(self.image, (width, height))
+            # self.image.fill(DEADLY_OBSTACLE_COLOR) # Color rojo para un obstáculo mortal # Comentado para priorizar imagen
             try: # Cargar imagen de lava
                 self.image = pygame.image.load("assets/imagenes/lava.png").convert_alpha()
                 self.image = pygame.transform.scale(self.image, (width, height))
@@ -204,7 +223,7 @@ class Enemy(pygame.sprite.Sprite):
         self.image = pygame.image.load("assets/imagenes/enemy.png").convert_alpha() # Cargar imagen del enemigo
         self.image = pygame.transform.scale(self.image, (int(SCREEN_WIDTH * 0.07), int(SCREEN_HEIGHT * 0.09))) # Tamaño del enemigo
         self.rect = self.image.get_rect(center=(x, y))
-        self.speed = 4 
+        self.speed = 4
         self.health = ENEMY_INITIAL_HEALTH
         self.max_health = ENEMY_INITIAL_HEALTH # Para la barra de vida
         self.attack_cooldown = 500 # Cooldown para atacar al jugador (milisegundos)
@@ -254,15 +273,17 @@ class Enemy(pygame.sprite.Sprite):
             self.is_attacking_anim = True # Iniciar animación de ataque del enemigo
             self.attack_anim_start_time = pygame.time.get_ticks() # Iniciar temporizador de animación
     def draw_health_bar(self, surface):
-        bar_width = self.rect.width * 0.8
-        bar_height = 5
-        bar_x = self.rect.centerx - bar_width // 2
-        bar_y = self.rect.top - 15 # Encima del enemigo
-        # Fondo de la barra de vida
-        pygame.draw.rect(surface, HEALTH_BAR_BACKGROUND_COLOR, (bar_x, bar_y, bar_width, bar_height), border_radius=2)
-        # Barra de vida actual
-        current_health_width = (self.health / self.max_health) * bar_width
-        pygame.draw.rect(surface, HEALTH_BAR_COLOR, (bar_x, bar_y, current_health_width, bar_height), border_radius=2)
+        if self.health > 0: # Solo dibujar si tiene vida
+            bar_width = self.rect.width * 0.8
+            bar_height = 5
+            bar_x = self.rect.centerx - bar_width // 2
+            bar_y = self.rect.top - 15 # Encima del enemigo
+            # Fondo de la barra de vida
+            pygame.draw.rect(surface, HEALTH_BAR_BACKGROUND_COLOR, (bar_x, bar_y, bar_width, bar_height), border_radius=2)
+            # Barra de vida actual
+            current_health_width = (self.health / self.max_health) * bar_width
+            if current_health_width > 0: # Solo dibujar la barra verde si hay vida
+                pygame.draw.rect(surface, HEALTH_BAR_COLOR, (bar_x, bar_y, current_health_width, bar_height), border_radius=2)
 
 # --- Variables Globales del Juego ---
 PLAYER_START_X = SCREEN_WIDTH // 2
@@ -271,8 +292,8 @@ player = Player(PLAYER_START_X, PLAYER_START_Y) # Posición inicial del jugador
 all_sprites = pygame.sprite.Group()
 collectible_objects = pygame.sprite.Group()
 goals = pygame.sprite.Group()
-obstacles = pygame.sprite.Group() # Nuevo grupo para obstáculos
-enemies = pygame.sprite.Group() # Nuevo grupo para enemigos
+obstacles = pygame.sprite.Group() #grupo para obstáculos
+enemies = pygame.sprite.Group() # grupo para enemigos
 all_sprites.add(player)
 current_operation = ""
 correct_answer = 0
@@ -291,9 +312,9 @@ last_level_played = 0 # Inicialmente 0 o 1, dependiendo de tu lógica
 last_level_operation_text = ""
 last_level_correct_answer = 0
 # Vidas del jugador para el nivel actual (se reinicia en cada nivel)
-player_current_level_lives = 1 
+player_current_level_lives = 1
 # Vidas que determinan los "juegos" antes de volver al checkpoint
-player_checkpoint_lives = 3 
+player_checkpoint_lives = 3
 # Variables de Checkpoint
 checkpoint_level = 1 # Nivel desde el que se reiniciará
 checkpoint_op_type = "suma" # Tipo de operación del checkpoint
@@ -319,7 +340,7 @@ def load_gif_frames(gif_path, scale_factor_width, scale_factor_height):
             # Redimensionar antes de convertir a Pygame para mejor rendimiento
             frame_resized = frame.resize((int(SCREEN_WIDTH * scale_factor_width), int(SCREEN_HEIGHT * scale_factor_height)))
             # Convertir el frame a un modo compatible con Pygame (RGBA para transparencia)
-            frame_rgba = frame_resized.convert("RGBA")            
+            frame_rgba = frame_resized.convert("RGBA")
             # Crear la superficie de Pygame
             pygame_frame = pygame.image.fromstring(frame_rgba.tobytes(), frame_rgba.size, frame_rgba.mode)
             frames.append(pygame_frame)
@@ -394,32 +415,36 @@ def draw_button(surface, rect, text, font, base_color, hover_color=None):
 # --- Funciones de Lógica del Juego ---
 def generate_operation(op_type, max_num, max_mult_div):
     global current_operation, correct_answer
-    num1 = random.randint(1, max_num)
-    num2 = random.randint(1, max_num)
+    num1 = 0
+    num2 = 0
+    correct_answer = 0
+
     if op_type == "suma":
+        num1 = random.randint(1, max_num)
+        num2 = random.randint(1, max_num)
         correct_answer = num1 + num2
         current_operation = f"{num1} + {num2} = ?"
     elif op_type == "resta":
+        num1 = random.randint(1, max_num)
+        num2 = random.randint(1, max_num)
         if num1 < num2: # Asegurarse de que el resultado no sea negativo
             num1, num2 = num2, num1
         correct_answer = num1 - num2
         current_operation = f"{num1} - {num2} = ?"
     elif op_type == "multiplicacion":
-        # Usar max_mult_div para los números en la multiplicación
-        num1 = random.randint(1, max_mult_div)
-        num2 = random.randint(1, max_mult_div)
+        # Usar min(10, max_mult_div + 5) para los números en la multiplicación
+        num1 = random.randint(1, min(10, max_mult_div + 5))
+        num2 = random.randint(1, min(10, max_mult_div + 5))
         correct_answer = num1 * num2
         current_operation = f"{num1} x {num2} = ?"
     elif op_type == "division":
         # Asegurarse de que la división sea exacta y el cociente sea manejable
-        # Usar max_mult_div para el divisor y el cociente para controlar la dificultad
-        correct_answer_temp = random.randint(1, max_mult_div) 
-        # Asegurarse de que num2_temp no sea 0
-        num2_temp = random.randint(1, max_mult_div) 
-        # Generar num1 como un múltiplo de num2_temp
-        num1 = correct_answer_temp * num2_temp
-        correct_answer = correct_answer_temp
-        current_operation = f"{num1} / {num2_temp} = ?"
+        divisor = random.randint(2, min(10, max_mult_div + 5))
+        cociente = random.randint(1, min(10, max_mult_div + 5))
+        num1 = divisor * cociente # El dividendo es el producto del divisor y el cociente
+        num2 = divisor # El divisor es el mismo
+        correct_answer = cociente
+        current_operation = f"{num1} / {num2} = ?"
     # Generar respuestas incorrectas "cercanas"
     incorrect_answers = set()
     while len(incorrect_answers) < 2:
@@ -436,7 +461,7 @@ def show_correct_answer_popup(message):
     popup_correct_answer = last_level_correct_answer # ¡MODIFICADO! Ahora muestra la respuesta del nivel ANTERIOR
 def handle_player_death_logic():
     global player_checkpoint_lives, game_state, feedback_message, feedback_color, feedback_timer
-    player_checkpoint_lives -= 1 
+    player_checkpoint_lives -= 1
     if sound_incorrect: # Sonido de fallo es más general para cualquier muerte en el nivel (por meta o daño)
          sound_incorrect.play()
     if player_checkpoint_lives <= 0:
@@ -445,7 +470,7 @@ def handle_player_death_logic():
         if sound_game_over: sound_game_over.play()
     else: # Si aún quedan vidas de checkpoint, reiniciar el nivel actual
         # Reiniciar el nivel con 1 vida de nivel y salud completa
-        generate_level(operation_type, max_number_in_op, max_multiplier_divisor) 
+        generate_level(operation_type, max_number_in_op, max_multiplier_divisor)
         player.reset_health() # Restaurar la salud del jugador
         show_correct_answer_popup(f"¡Cuidado! Vidas de checkpoint restantes: {player_checkpoint_lives}. La respuesta correcta era:")
 def generate_level(op_type, max_num_op, max_mult_div_op):
@@ -500,7 +525,7 @@ def generate_level(op_type, max_num_op, max_mult_div_op):
     forbidden_zones_for_obstacles.extend(goal_exclusion_zones) # Obstáculos no cerca de metas
     forbidden_zones_for_obstacles.append(player_exclusion_zone) # ¡Evitar la zona del jugador!
     # También evitamos la zona de la UI superior
-    forbidden_zones_for_obstacles.append(pygame.Rect(0, 0, SCREEN_WIDTH, UI_BAR_HEIGHT + 20)) 
+    forbidden_zones_for_obstacles.append(pygame.Rect(0, 0, SCREEN_WIDTH, UI_BAR_HEIGHT + 20))
     # Definir cuántos serán mortales (porcentaje o número fijo)
     num_deadly_obstacles = random.randint(1, 4) # Entre 1 y 4 obstáculos mortales
     for i in range(num_obstacles):
@@ -676,11 +701,12 @@ def draw_controls_popup(surface):
     draw_text(surface, "OBJETIVO DEL JUEGO:", font_popup_text, BLACK, popup_x + 40, objective_text_start_y, center=False)
     objective_lines = [
         "Resuelve la operación matemática en la parte superior.",
-        "Recolecta la cantidad de zapaatos que es la respuesta correcta.",
-        "Lleva las estrellas recolectadas a la meta con la respuesta correcta.",
+        "Recolecta la cantidad de zapatos que es la respuesta correcta.",
+        "Lleva los zapatos recolectados a la meta con la respuesta correcta."
+        "",
         "¡Cuidado con los obstáculos mortales y los enemigos!",
         "Derrotar enemigos te dará un zapato.",
-        "Cada 10 niveles se guarda un checkpoint y recuperas vidas.",
+        "Cada 5 niveles se guarda un checkpoint y recuperas vidas.",
         "¡Evita quedarte sin vidas de checkpoint!"
     ]
     obj_line_y = objective_text_start_y + font_popup_text.get_height() + 10
@@ -727,7 +753,7 @@ while running:
                 if sum_btn_rect.collidepoint(event.pos):
                     operation_type = "suma"
                     max_number_in_op = 10 # Inicio para sumas/restas
-                    max_multiplier_divisor = 5 # No se usa en sumas/restas, pero se inicializa
+                    max_multiplier_divisor = 2 # Ajustado para que la primera etapa de mult/div sea consistente
                     checkpoint_op_type = operation_type
                     checkpoint_max_num = max_number_in_op
                     checkpoint_max_mult_div = max_multiplier_divisor
@@ -736,7 +762,7 @@ while running:
                 elif subtract_btn_rect.collidepoint(event.pos):
                     operation_type = "resta"
                     max_number_in_op = 10
-                    max_multiplier_divisor = 5
+                    max_multiplier_divisor = 2 # Ajustado
                     checkpoint_op_type = operation_type
                     checkpoint_max_num = max_number_in_op
                     checkpoint_max_mult_div = max_multiplier_divisor
@@ -745,7 +771,7 @@ while running:
                 elif multiply_btn_rect.collidepoint(event.pos):
                     operation_type = "multiplicacion"
                     max_number_in_op = 10 # Para el tamaño del resultado
-                    max_multiplier_divisor = 5 # Inicio para multiplicaciones
+                    max_multiplier_divisor = 2 # Inicio para multiplicaciones (será 2 en nivel 1-5)
                     checkpoint_op_type = operation_type
                     checkpoint_max_num = max_number_in_op
                     checkpoint_max_mult_div = max_multiplier_divisor
@@ -754,7 +780,7 @@ while running:
                 elif divide_btn_rect.collidepoint(event.pos):
                     operation_type = "division"
                     max_number_in_op = 20 # Para el tamaño del resultado (dividendo)
-                    max_multiplier_divisor = 5 # Inicio para divisiones (divisor y cociente)
+                    max_multiplier_divisor = 2 # Inicio para divisiones (será 2 en nivel 1-5)
                     checkpoint_op_type = operation_type
                     checkpoint_max_num = max_number_in_op
                     checkpoint_max_mult_div = max_multiplier_divisor
@@ -784,55 +810,60 @@ while running:
                     feedback_message = ""
                     feedback_timer = 0
             elif game_state == "level_complete":
-                # Al hacer clic después de completar un nivel, pasar al siguiente
-                # El clic puede ser en cualquier parte de la pantalla si solo hay un mensaje.
-                # O podríamos tener un botón "Continuar" explícito. Por ahora, cualquier clic.
                 if sound_win: sound_win.stop() # Detener sonido de victoria si está reproduciéndose
                 level += 1
                 # --- Lógica de progresión de dificultad ---
-                # Progresión para números de suma/resta
                 if operation_type in ["suma", "resta"]:
-                    if level <= 5: 
+                    if level <= 5:
                         max_number_in_op = 10
-                    elif level <= 10: 
+                    elif level <= 10:
                         max_number_in_op = 20
                     elif level <= 15:
                         max_number_in_op = 30
                     else:
-                        max_number_in_op = 50 # Y así sucesivamente
-                # Progresión para multiplicadores/divisores en multiplicación/división
+                        max_number_in_op = 50
                 elif operation_type in ["multiplicacion", "division"]:
-                    if level <= 5:
-                        max_multiplier_divisor = 5
-                    elif level <= 10:
+                    if level <= 5: # Niveles 1-5
+                        max_multiplier_divisor = 2
+                    elif level <= 10: # Niveles 6-10
+                        max_multiplier_divisor = 6
+                    elif level <= 15: # Niveles 11-15
                         max_multiplier_divisor = 10
-                    elif level <= 15:
-                        max_multiplier_divisor = 12
-                    else:
-                        max_multiplier_divisor = 15 # Y así sucesivamente
-                    # Para divisiones, el número a dividir también puede aumentar un poco más
+                    else: # Niveles > 15
+                        max_multiplier_divisor = 16 # MODIFICADO: Ajustado a 16
                     if operation_type == "division":
-                        max_number_in_op = max_multiplier_divisor * 5 # Aumenta el dividendo
-                # Tipo de operación cambia cada 5 niveles
-                if level > 1 and (level - 1) % 5 == 0:
-                    operation_type = random.choice(["suma", "resta", "multiplicacion", "division"])
+                        # El dividendo se calcula en generate_operation basado en divisor y cociente,
+                        # que a su vez usan max_multiplier_divisor.
+                        # max_number_in_op no se usa directamente para controlar el dividendo aquí.
+                        pass
+
+                # MODIFICADO: Se elimina el cambio aleatorio de operation_type para mantener la elección del menú.
+                # if level > 1 and (level - 1) % 5 == 0:
+                #     operation_type = random.choice(["suma", "resta", "multiplicacion", "division"])
+
                 # --- Lógica de Checkpoint ---
-                # Si el nivel que acaba de completar es un múltiplo de 10, guardar checkpoint
-                if (level - 1) % 10 == 0 and level > 1:
+                # Checkpoint cada 5 niveles completados (es decir, al INICIO del nivel 6, 11, 16...)
+                # (level -1) es el número de niveles completados.
+                # Entonces, si (level-1) es 5, 10, 15...
+                if (level - 1) > 0 and (level - 1) % 5 == 0 : # (level-1) para que sea después de completar el nivel 5, 10, etc.
                     checkpoint_level = level
-                    checkpoint_op_type = operation_type
+                    checkpoint_op_type = operation_type # operation_type ya no cambia aleatoriamente
                     checkpoint_max_num = max_number_in_op
                     checkpoint_max_mult_div = max_multiplier_divisor
-                    player_checkpoint_lives = 3 # Se recargan las 3 vidas de checkpoint
-                    
-                player.reset_health() # Restaurar salud del jugador al iniciar un nuevo nivel
+                    player_checkpoint_lives = 3
+                    # Pequeño mensaje de feedback para el checkpoint
+                    feedback_message = "¡Checkpoint Guardado! ¡Vidas Recargadas!"
+                    feedback_color = GREEN # O un color distintivo para checkpoints
+                    feedback_timer = pygame.time.get_ticks() # Para mostrarlo un momento
+
+                player.reset_health()
                 game_state = "playing"
                 generate_level(operation_type, max_number_in_op, max_multiplier_divisor)
+
             elif game_state == "game_over":
                 # Si el jugador hace clic en Game Over, reinicia desde el último checkpoint
-                # O si hace clic en el botón de cambiar operador
                 game_over_continue_btn_rect = pygame.Rect(SCREEN_WIDTH // 2 - int(SCREEN_WIDTH * 0.2) // 2, SCREEN_HEIGHT // 2 + int(SCREEN_HEIGHT * 0.15), int(SCREEN_WIDTH * 0.2), int(SCREEN_HEIGHT * 0.08))
-                game_over_menu_btn_rect = pygame.Rect(SCREEN_WIDTH // 2 - int(SCREEN_WIDTH * 0.2) // 2, SCREEN_HEIGHT // 2 + int(SCREEN_HEIGHT * 0.25), int(SCREEN_WIDTH * 0.2), int(SCREEN_HEIGHT * 0.08))
+                game_over_menu_btn_rect = pygame.Rect(SCREEN_WIDTH // 2 - int(SCREEN_WIDTH * 0.2) // 2, SCREEN_HEIGHT // 2 + int(SCREEN_HEIGHT * 0.25), int(SCREEN_WIDTH * 0.2), int(SCREEN_HEIGHT * 0.08)) # Ajustada Y
                 if game_over_continue_btn_rect.collidepoint(event.pos):
                     if sound_game_over: sound_game_over.stop() # Detener sonido de game over
                     game_state = "playing"
@@ -875,20 +906,14 @@ while running:
             elif game_state == "controls_info":
                 button_width = int(SCREEN_WIDTH * 0.15)
                 button_height = int(SCREEN_HEIGHT * 0.07)
-                button_rect_for_click_check = pygame.Rect(
-                    SCREEN_WIDTH // 2 - button_width // 2,
-                    int(SCREEN_HEIGHT * 0.8) // 2 - button_height - 20 + int(SCREEN_HEIGHT * 0.8) // 2 + int(SCREEN_HEIGHT * 0.1), # Esto es un poco complicado, ajusta con valores absolutos si es necesario
-                    button_width,
-                    button_height
-                )
                 # Recalculando la posición del botón 'Entendido' para el clic
-                popup_width = int(SCREEN_WIDTH * 0.7)
-                popup_height = int(SCREEN_HEIGHT * 0.8)
-                popup_x = SCREEN_WIDTH // 2 - popup_width // 2
-                popup_y = SCREEN_HEIGHT // 2 - popup_height // 2
+                popup_width_ctrl = int(SCREEN_WIDTH * 0.7) # Renombrado para evitar conflicto con popup_width global
+                popup_height_ctrl = int(SCREEN_HEIGHT * 0.8) # Renombrado
+                popup_y_ctrl = SCREEN_HEIGHT // 2 - popup_height_ctrl // 2 # Renombrado
+
                 button_rect_for_click_check = pygame.Rect(
                     SCREEN_WIDTH // 2 - button_width // 2,
-                    popup_y + popup_height - button_height - 20, # Usa la misma lógica que en draw_controls_popup
+                    popup_y_ctrl + popup_height_ctrl - button_height - 20, # Usa la misma lógica que en draw_controls_popup
                     button_width,
                     button_height
                 )
@@ -897,7 +922,7 @@ while running:
         if event.type == pygame.KEYDOWN:
             if game_state == "playing":
                 if event.key == pygame.K_q: # Tecla 'Q' para soltar objetos
-                    player.drop_object()                      
+                    player.drop_object()
     # --- Actualizaciones del Juego ---
     if game_state == "playing":
         keys = pygame.key.get_pressed()
@@ -928,10 +953,7 @@ while running:
                     new_obj = CollectibleObject(enemy.rect.centerx, enemy.rect.centery)
                     collectible_objects.add(new_obj)
                     all_sprites.add(new_obj)
-            elif not player.is_attacking: # Si el jugador NO está atacando y el enemigo es agresivo, el enemigo ataca al jugador
-                # Aquí, la variable `damage_taken_this_attack` del enemigo debe ser False
-                # para que el enemigo pueda volver a ser dañado en un nuevo ataque del jugador.
-                # Ya la reseteamos al inicio del `enemy.update()`.
+            elif not player.is_attacking:
                 if enemy.is_aggressive:
                     enemy.attack(player)
         # Colisión con objetos coleccionables
@@ -942,7 +964,7 @@ while running:
         collided_goal = None
         for goal in goals:
             # Usamos el collision_rect de la meta para una colisión más precisa
-            if player.rect.colliderect(goal.collision_rect): 
+            if player.rect.colliderect(goal.collision_rect):
                 collided_goal = goal
                 break # Solo procesar una colisión de meta a la vez
         if collided_goal: # Si el jugador colisionó con CUALQUIER meta (con su collision_rect)
@@ -954,6 +976,7 @@ while running:
                     if sound_correct: sound_correct.play()
                     if sound_win: sound_win.play() # Reproducir sonido de victoria
                     game_state = "level_complete"
+                    # El feedback_timer se gestionará en la sección de dibujado si es necesario para "Level Complete"
                 else: # Cantidad correcta pero meta incorrecta
                     player_current_level_lives -= 1 # Resta una vida por error
                     if sound_incorrect: sound_incorrect.play()
@@ -969,11 +992,21 @@ while running:
                 else:
                     show_correct_answer_popup(f"Necesitas {correct_answer} objetos. Tienes {player.collected_objects}. La respuesta correcta era:")
             # Después de la interacción con la meta, mover al jugador un poco para evitar múltiples colisiones instantáneas
-            player.rect.center = (player.rect.centerx, player.rect.centery + int(SCREEN_HEIGHT * 0.05))
-            # No break, para que se pueda seguir moviendo aunque colisione con una meta y falle
+            # Solo si no se completó el nivel, para no interferir con la transición.
+            if game_state != "level_complete":
+                 player.rect.center = (player.rect.centerx, player.rect.centery + int(SCREEN_HEIGHT * 0.05))
+
         # Comprobar si el jugador ha muerto por salud
         if player.health <= 0 and game_state == "playing": # Asegurarse de que no se llama varias veces
             handle_player_death_logic()
+
+        # Manejo del feedback_timer para mensajes temporales (como el de checkpoint)
+        if feedback_message and feedback_timer > 0:
+            if pygame.time.get_ticks() - feedback_timer > FEEDBACK_DURATION:
+                feedback_message = ""
+                feedback_timer = 0
+
+
     # --- Dibujado / Renderizado ---
     screen.fill(BLUE_LIGHT)
     if game_state == "menu":
@@ -992,16 +1025,19 @@ while running:
         # Mostrar la operación actual - Centrado
         draw_text(screen, current_operation, font_operation, BLACK, SCREEN_WIDTH // 2, UI_BAR_HEIGHT // 2)
         # Mostrar vidas de checkpoint (izquierda)
-        draw_text(screen, f"Vidas: {player_checkpoint_lives}", font_lives, BLACK, int(SCREEN_WIDTH * 0.1), UI_BAR_HEIGHT // 2) 
+        draw_text(screen, f"Vidas: {player_checkpoint_lives}", font_lives, BLACK, int(SCREEN_WIDTH * 0.1), UI_BAR_HEIGHT // 2)
         # Mostrar nivel (izquierda, debajo de vidas o al lado)
         draw_text(screen, f"Nivel: {level}", font_lives, BLACK, int(SCREEN_WIDTH * 0.25), UI_BAR_HEIGHT // 2)
         # Mostrar salud del jugador (derecha, al lado de objetos)
-        draw_text(screen, f"Salud: {player.health}", font_health, BLACK, SCREEN_WIDTH - int(SCREEN_WIDTH * 0.25), UI_BAR_HEIGHT // 2) 
+        draw_text(screen, f"Salud: {player.health}", font_health, BLACK, SCREEN_WIDTH - int(SCREEN_WIDTH * 0.25), UI_BAR_HEIGHT // 2)
         # Botón para volver al menú de operadores
         menu_btn_rect = pygame.Rect(SCREEN_WIDTH - int(SCREEN_WIDTH * 0.15) - 20, 10, int(SCREEN_WIDTH * 0.15), UI_BAR_HEIGHT - 20)
         draw_button(screen, menu_btn_rect, "Menú", font_button, BUTTON_COLOR, HOVER_COLOR)
+
         # Dibujar todos los sprites (jugador, objetos, metas, obstáculos, enemigos)
         all_sprites.draw(screen)
+        player.draw_health_bar(screen) # MODIFICADO: Dibujar barra de vida del jugador
+
         # Dibujar barras de vida de los enemigos
         for enemy in enemies:
             enemy.draw_health_bar(screen)
@@ -1015,10 +1051,15 @@ while running:
             if enemy.is_attacking_anim and pygame.time.get_ticks() - enemy.attack_anim_start_time < ENEMY_ATTACK_ANIM_DURATION:
                 enemy_attack_rect = enemy.rect.inflate(10, 10) # Ligeramente más grande que el enemigo
                 pygame.draw.rect(screen, ENEMY_ATTACK_COLOR, enemy_attack_rect, 2) # Dibujar un borde rojo
-        # Mostrar mensaje de feedback (si hay alguno y el estado no es el popup, ya que el popup lo reemplaza)
-        # Este feedback solo se mostrará si no está activo el popup de respuesta.
-        if feedback_message and game_state != "show_answer_popup" and game_state != "level_complete":
-            draw_text(screen, feedback_message, font_feedback, feedback_color, SCREEN_WIDTH // 2, SCREEN_HEIGHT - int(SCREEN_HEIGHT * 0.07))
+
+        # Mostrar mensaje de feedback (si hay alguno y el estado no es el popup)
+        if feedback_message and game_state != "show_answer_popup" and game_state != "level_complete": # No mostrar durante popup o level_complete screen
+            if feedback_timer > 0: # Solo si es un mensaje temporal como el de checkpoint
+                 draw_text(screen, feedback_message, font_feedback, feedback_color, SCREEN_WIDTH // 2, SCREEN_HEIGHT - int(SCREEN_HEIGHT * 0.07))
+            elif game_state == "feedback": # Para otros feedbacks que usan el estado "feedback" (si lo hubiera)
+                 draw_text(screen, feedback_message, font_feedback, feedback_color, SCREEN_WIDTH // 2, SCREEN_HEIGHT - int(SCREEN_HEIGHT * 0.07))
+
+
         if game_state == "level_complete":
             # Animación de victoria (GIF)
             if win_gif_frames:
@@ -1031,8 +1072,14 @@ while running:
                 screen.blit(current_win_frame, image_rect)
             draw_text(screen, "¡NIVEL COMPLETADO!", font_large, GREEN, SCREEN_WIDTH // 2, SCREEN_HEIGHT // 2 + int(SCREEN_HEIGHT * 0.1))
             draw_text(screen, "¡Haz clic para el siguiente nivel!", font_feedback, BLACK, SCREEN_WIDTH // 2, SCREEN_HEIGHT // 2 + int(SCREEN_HEIGHT * 0.2))
+            # Mostrar el mensaje de checkpoint aquí también si fue guardado
+            if feedback_message and "Checkpoint" in feedback_message: # Específico para el mensaje de checkpoint
+                draw_text(screen, feedback_message, font_feedback, GREEN, SCREEN_WIDTH // 2, SCREEN_HEIGHT // 2 + int(SCREEN_HEIGHT * 0.28))
+
+
         # Mostrar contador de objetos (abajo a la derecha) - DIBUJAR AL FINAL PARA ESTAR SIEMPRE AL FRENTE
         draw_text(screen, f"Objetos: {player.collected_objects}", font_counter, BLACK, SCREEN_WIDTH - int(SCREEN_WIDTH * 0.1), SCREEN_HEIGHT - int(SCREEN_HEIGHT * 0.05))
+
         # --- Dibuja la ventana emergente si el estado es show_answer_popup ---
         if game_state == "show_answer_popup":
             # Crear una superficie semi-transparente para el fondo oscuro
@@ -1040,24 +1087,24 @@ while running:
             overlay.fill((0, 0, 0, 180)) # Negro con 180 de opacidad (de 255)
             screen.blit(overlay, (0, 0))
             # Dimensiones de la ventana emergente
-            popup_width = int(SCREEN_WIDTH * 0.6)
-            popup_height = int(SCREEN_HEIGHT * 0.5) # Aumentar un poco la altura para más texto
-            popup_x = SCREEN_WIDTH // 2 - popup_width // 2
-            popup_y = SCREEN_HEIGHT // 2 - popup_height // 2
-            popup_rect = pygame.Rect(popup_x, popup_y, popup_width, popup_height)
+            popup_width_show = int(SCREEN_WIDTH * 0.6) # Renombrado
+            popup_height_show = int(SCREEN_HEIGHT * 0.5) # Renombrado
+            popup_x_show = SCREEN_WIDTH // 2 - popup_width_show // 2 # Renombrado
+            popup_y_show = SCREEN_HEIGHT // 2 - popup_height_show // 2 # Renombrado
+            popup_rect = pygame.Rect(popup_x_show, popup_y_show, popup_width_show, popup_height_show)
             pygame.draw.rect(screen, WHITE, popup_rect, border_radius=15)
             pygame.draw.rect(screen, BLACK, popup_rect, 5, border_radius=15) # Borde
             # Área para el mensaje principal (dentro del popup)
-            message_area_rect = pygame.Rect(popup_x + 20, popup_y + 20, popup_width - 40, popup_height * 0.4)
+            message_area_rect = pygame.Rect(popup_x_show + 20, popup_y_show + 20, popup_width_show - 40, popup_height_show * 0.4)
             draw_wrapped_text(screen, popup_message, font_medium, BLACK, message_area_rect)
             # Respuesta correcta
-            draw_text(screen, str(popup_correct_answer), font_large, GREEN, SCREEN_WIDTH // 2, popup_y + int(popup_height * 0.65))
+            draw_text(screen, str(popup_correct_answer), font_large, GREEN, SCREEN_WIDTH // 2, popup_y_show + int(popup_height_show * 0.65))
             # Botón "Cerrar"
             popup_button_width = int(SCREEN_WIDTH * 0.15)
             popup_button_height = int(SCREEN_HEIGHT * 0.07)
             popup_button_rect = pygame.Rect(
                 SCREEN_WIDTH // 2 - popup_button_width // 2,
-                popup_y + int(popup_height * 0.85), # Posición debajo del mensaje de la respuesta
+                popup_y_show + int(popup_height_show * 0.85), # Posición debajo del mensaje de la respuesta
                 popup_button_width,
                 popup_button_height
             )
@@ -1073,12 +1120,10 @@ while running:
             image_rect = current_lose_frame.get_rect(center=(SCREEN_WIDTH // 2, SCREEN_HEIGHT // 2 - int(SCREEN_HEIGHT * 0.15)))
             screen.blit(current_lose_frame, image_rect)
         draw_text(screen, "¡GAME OVER!", font_large, RED, SCREEN_WIDTH // 2, SCREEN_HEIGHT // 2 + int(SCREEN_HEIGHT * 0.05))
-        draw_text(screen, f"Alcanzaste el Nivel: {level}", font_medium, BLACK, SCREEN_WIDTH // 2, SCREEN_HEIGHT // 2 + int(SCREEN_HEIGHT * 0.15))
+        draw_text(screen, f"Alcanzaste el Nivel: {level}", font_medium, BLACK, SCREEN_WIDTH // 2, SCREEN_HEIGHT // 2 + int(SCREEN_HEIGHT * 0.15)) # Ajustada Y
         # Botones de Game Over
-        game_over_continue_btn_rect = pygame.Rect(SCREEN_WIDTH // 2 - int(SCREEN_WIDTH * 0.2) // 2, SCREEN_HEIGHT // 2 + int(SCREEN_HEIGHT * 0.25), int(SCREEN_WIDTH * 0.2), int(SCREEN_HEIGHT * 0.08))
+        game_over_continue_btn_rect = pygame.Rect(SCREEN_WIDTH // 2 - int(SCREEN_WIDTH * 0.2) // 2, SCREEN_HEIGHT // 2 + int(SCREEN_HEIGHT * 0.25), int(SCREEN_WIDTH * 0.2), int(SCREEN_HEIGHT * 0.08)) # Ajustada Y
         draw_button(screen, game_over_continue_btn_rect, "Continuar", font_button, BUTTON_COLOR, HOVER_COLOR)
-        game_over_menu_btn_rect = pygame.Rect(SCREEN_WIDTH // 2 - int(SCREEN_WIDTH * 0.2) // 2, SCREEN_HEIGHT // 2 + int(SCREEN_HEIGHT * 0.35), int(SCREEN_WIDTH * 0.2), int(SCREEN_HEIGHT * 0.08))
-        draw_button(screen, game_over_menu_btn_rect, "Cambiar Operador", font_button, BUTTON_COLOR, HOVER_COLOR)
     elif game_state == "controls_info":
         # El draw_controls_popup ahora devuelve el rect del botón, lo usamos para la detección de clic
         controls_button_rect = draw_controls_popup(screen)
